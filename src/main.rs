@@ -17,7 +17,7 @@ enum AppLaunchMode {
 #[command(version, about, long_about = None)]
 struct Args {
     // Launch mode for the app. Default will run the executable as the user-facing windowed editor.
-    #[arg(long)]
+    #[arg(long, default_value = "1")]
     launch_mode: String, // String reference to enum.
 }
 
@@ -42,6 +42,7 @@ struct AppConfig {
 // Init
 // ======================
 
+// Initialize the app's global logger and filter. Currently uses default formatter.
 fn init_logger() {
     let env = Env::default().default_filter_or("info");
     Builder::from_env(env).default_format().init();
@@ -53,6 +54,5 @@ fn main() {
         launch_mode: Args::match_launch_mode_str(&args.launch_mode),
     };
 
-    // println!("mode: {}", args.launch_mode);
-    log::info!("Launching with mode: {}", args.launch_mode);
+    log::info!("Launching with mode: {:?}", config.launch_mode);
 }
