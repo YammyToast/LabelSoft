@@ -1,75 +1,58 @@
-// #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-// #![allow(rustdoc::missing_crate_level_docs)] // it's an example
-
-// use eframe::egui;
-
-// fn main() -> eframe::Result {
-//     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
-//     let options = eframe::NativeOptions {
-//         viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
-//         ..Default::default()
-//     };
-//     eframe::run_native(
-//         "My egui App",
-//         options,
-//         Box::new(|cc| {
-//             // This gives us image support:
-//             egui_extras::install_image_loaders(&cc.egui_ctx);
-
-//             Ok(Box::<MyApp>::default())
-//         }),
-//     )
-// }
-
-// struct MyApp {
-//     name: String,
-//     age: u32,
-// }
-
-// impl Default for MyApp {
-//     fn default() -> Self {
-//         Self {
-//             name: "Arthur".to_owned(),
-//             age: 42,
-//         }
-//     }
-// }
-
-// impl eframe::App for MyApp {
-//     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-//         egui::CentralPanel::default().show(ctx, |ui| {
-//             ui.heading("My egui Application");
-//             ui.horizontal(|ui| {
-//                 let name_label = ui.label("Your name: ");
-//                 ui.text_edit_singleline(&mut self.name)
-//                     .labelled_by(name_label.id);
-//             });
-//             ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
-//             if ui.button("Increment").clicked() {
-//                 self.age += 1;
-//             }
-//             ui.label(format!("Hello '{}', age {}", self.name, self.age));
-
-//             // ui.image(egui::include_image!(
-//             //     "../../../crates/egui/assets/ferris.png"
-//             // ));
-//         });
-//     }
-// }
+use clap::Parser;
 use env_logger::{Builder, Env, WriteStyle};
 use log::{debug, error, info, log_enabled, Level, Log};
-use std::{fmt::Debug, io::Write};
+use std::{env::args, fmt::Debug, io::Write};
 
 mod csv;
-mod shared;
+// ======================
+// Launch Args
+// ======================
+
+#[derive(Debug)]
+enum AppLaunchMode {
+    DEFAULT,
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    // Launch mode for the app. Default will run the executable as the user-facing windowed editor.
+    #[arg(long)]
+    launch_mode: String, // String reference to enum.
+}
+
+impl Args {
+    fn match_launch_mode_str(__arg_string: &String) -> AppLaunchMode {
+        match __arg_string.as_str() {
+            "default" | "0" | _ => AppLaunchMode::DEFAULT,
+        }
+    }
+}
+
+// ======================
+// Config
+// ======================
+
+/// Config Struct bundling together launch arguments that describe the desired app behaviour.
+struct AppConfig {
+    launch_mode: AppLaunchMode,
+}
+
+// ======================
+// Init
+// ======================
 
 fn init_logger() {
     let env = Env::default().default_filter_or("info");
     Builder::from_env(env).default_format().init();
 }
-
 fn main() {
-    // let shared = Share
     init_logger();
-    log::info!("Hello World");
+    let args = Args::parse();
+    let config = AppConfig {
+        launch_mode: Args::match_launch_mode_str(&args.launch_mode),
+    };
+
+    // println!("mode: {}", args.launch_mode);
+    log::info!("Launching with mode: {}", args.launch_mode);
 }
