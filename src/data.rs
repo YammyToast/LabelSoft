@@ -7,25 +7,38 @@ use log::{debug, error, info, log_enabled, Level, Log};
 // ======================
 // Schema
 // ======================
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataProjectSchema {
     // String key, points to element's index in record.
-    cols: HashMap<String, usize>,
+    pub cols: HashMap<String, usize>,
     // Number of columns in the DataProject.
-    num_cols: usize,
+    pub num_cols: usize,
 }
 
 impl DataProjectSchema {
-    pub fn new(__cols: Vec<String>) -> Self {
+    pub fn new(__cols: Vec<String>) -> Result<Self, Box<dyn Error>> {
         let mut cols: HashMap<String, usize> = HashMap::new();
+        let mut errors: Vec<String> = Vec::new();
         for col in __cols.iter().enumerate() {
+            // check if value is empty
+            if col.1.is_empty() {
+                errors.push(format!(
+                    "Header with no value in column: {:?} of file",
+                    col.0
+                ));
+                continue;
+            }
+
             cols.insert(col.1.to_string(), col.0);
         }
         let num_cols = &cols.len();
-        DataProjectSchema {
+        if !errors.is_empty() {
+            return Err(errors.join(",").into());
+        }
+        Ok(DataProjectSchema {
             cols: cols,
             num_cols: *num_cols,
-        }
+        })
     }
 }
 
@@ -46,7 +59,7 @@ pub struct DataProject {
 }
 
 impl DataProject {
-    fn read_first_line(__fp: &Path) -> Result<String, Box<dyn Error>> {
+    pub fn read_first_line(__fp: &Path) -> Result<String, Box<dyn Error>> {
         // safe to unwrap as fp has been verified.
         let f = File::open(__fp).unwrap();
         // Iterator does not load until yield, thus reading first line is efficient.
@@ -76,7 +89,11 @@ impl DataProject {
                     Ok(v) => v,
                 };
                 let headers = header_str.split(",").map(|val| val.to_string()).collect();
-                return Ok(DataProjectSchema::new(headers));
+                let schema = match DataProjectSchema::new(headers) {
+                    Err(e) => return Err(format!("Could not infer schema: {:?}", e).into()),
+                    Ok(v) => v,
+                };
+                return Ok(schema);
             }
             _ => {
                 return Err(format!(
