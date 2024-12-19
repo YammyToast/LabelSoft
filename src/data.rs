@@ -28,6 +28,14 @@ impl DataProjectSchema {
                 ));
                 continue;
             }
+            // check if column already exists/is a duplicate
+            if cols.get(col.1).is_some() {
+                errors.push(format!(
+                    "Header with value: \'{:?}\' already exists at column: {:?}",
+                    col.1, col.0
+                ));
+                continue;
+            }
 
             cols.insert(col.1.to_string(), col.0);
         }

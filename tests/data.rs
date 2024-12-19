@@ -23,13 +23,28 @@ mod test_csv {
             .collect();
         let schema_missing_val = DataProjectSchema::new(hd_missing.clone());
         assert!(schema_missing_val.is_err());
-        // unwrap as we know this is an error
         let missing_errors = schema_missing_val.err().unwrap();
-        let missing_errors_list: Vec<String> = missing_errors.to_string().split(",").map(|f| f.to_string()).collect();
-        println!("{:?}", missing_errors_list);
+        let missing_errors_list: Vec<String> = missing_errors
+            .to_string()
+            .split(",")
+            .map(|f| f.to_string())
+            .collect();
         assert_eq!(missing_errors_list.len(), 6);
-        // ==== duplicate column names
 
+        // ==== duplicate column names
+        let hd_duplicate: Vec<String> = String::from("dupe1,dupe1,dupe2,dupe3,dupe2,end")
+            .split(",")
+            .map(|f| f.to_string())
+            .collect();
+        let schema_duplicate_val = DataProjectSchema::new(hd_duplicate.clone());
+        assert!(schema_duplicate_val.is_err());
+        let duplicate_errors = schema_duplicate_val.err().unwrap();
+        let duplicate_errors_list: Vec<String> = duplicate_errors
+            .to_string()
+            .split(",")
+            .map(|f| f.to_string())
+            .collect();
+        assert_eq!(duplicate_errors_list.len(), 2);
         // ==== special characters
         // ==== leading/trailing spaces
     }
