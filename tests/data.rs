@@ -45,8 +45,16 @@ mod test_csv {
             .map(|f| f.to_string())
             .collect();
         assert_eq!(duplicate_errors_list.len(), 2);
-        // ==== special characters
-        // ==== leading/trailing spaces
+
+        // ==== non-typical characters
+        let hd_chars: Vec<String> = String::from("id,名字,age")
+            .split(",")
+            .map(|f| f.to_string())
+            .collect();
+        let schema_chars = DataProjectSchema::new(hd_chars.clone());
+        assert!(schema_chars.is_ok());
+        println!("{:?}", schema_chars)
+
     }
 
     #[test]
