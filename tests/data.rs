@@ -46,15 +46,23 @@ mod test_csv {
             .collect();
         assert_eq!(duplicate_errors_list.len(), 2);
 
+        // ==== key trimming
+        let hd_trim: Vec<String> = String::from("    id,     age   , test")
+            .split(",")
+            .map(|f| f.to_string())
+            .collect();
+        let schema_trim = DataProjectSchema::new(hd_trim.clone()).unwrap();
+        assert!(schema_trim.cols.get("id").is_some());
+        assert!(schema_trim.cols.get("age").is_some());
+
         // ==== non-typical characters
-        let hd_chars: Vec<String> = String::from("id,名字,age")
+        let hd_chars: Vec<String> = String::from("id,名字,age, c!ard, #address")
             .split(",")
             .map(|f| f.to_string())
             .collect();
         let schema_chars = DataProjectSchema::new(hd_chars.clone());
         assert!(schema_chars.is_ok());
         println!("{:?}", schema_chars)
-
     }
 
     #[test]

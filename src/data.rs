@@ -20,8 +20,9 @@ impl DataProjectSchema {
         let mut cols: HashMap<String, usize> = HashMap::new();
         let mut errors: Vec<String> = Vec::new();
         for col in __cols.iter().enumerate() {
+            let key = col.1.trim();
             // check if value is empty
-            if col.1.is_empty() {
+            if key.is_empty() {
                 errors.push(format!(
                     "Header with no value in column: {:?} of file",
                     col.0
@@ -29,15 +30,15 @@ impl DataProjectSchema {
                 continue;
             }
             // check if column already exists/is a duplicate
-            if cols.get(col.1).is_some() {
+            if cols.get(key).is_some() {
                 errors.push(format!(
                     "Header with value: \'{:?}\' already exists at column: {:?}",
-                    col.1, col.0
+                    key, col.0
                 ));
                 continue;
             }
 
-            cols.insert(col.1.to_string(), col.0);
+            cols.insert(key.to_string(), col.0);
         }
         let num_cols = &cols.len();
         if !errors.is_empty() {
