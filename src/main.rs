@@ -1,9 +1,10 @@
 use clap::Parser;
+use data::DataProject;
 use env_logger::{Builder, Env, WriteStyle};
 use log::{debug, error, info, log_enabled, Level, Log};
-use std::{env::args, fmt::Debug, io::Write};
+use std::{env::args, fmt::Debug, io::Write, process::exit};
 
-mod csv;
+mod data;
 // ======================
 // Launch Args
 // ======================
@@ -55,4 +56,12 @@ fn main() {
     };
 
     log::info!("Launching with mode: {:?}", config.launch_mode);
+    let test: DataProject = match DataProject::new_infer_schema("tests/assets/good.csv") {
+        None => {
+            error!("Could not create Data project");
+            exit(1)
+        }
+        Some(v) => v,
+    };
+    info!("{:?}", test.schema);
 }
