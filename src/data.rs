@@ -53,6 +53,46 @@ impl DataProjectSchema {
 }
 
 // ======================
+// DataRecord
+// ======================
+#[derive(Debug)]
+struct DataRecord {
+    elements: Vec<String>,
+}
+
+impl DataRecord {
+    fn check_against_schema(
+        __elements: &Vec<String>,
+        __schema: &DataProjectSchema,
+    ) -> Option<Box<dyn Error>> {
+        if __elements.len() != __schema.num_cols {
+            return Some(format!("Number of values does not match columns in schema").into())
+        }
+        None
+    }
+
+    pub fn new(
+        __record_str: &String,
+        __schema: &DataProjectSchema,
+    ) -> Result<Self, Box<dyn Error>> {
+        let elements: Vec<String> = __record_str.split(",").map(|val| val.to_string()).collect();
+        match Self::check_against_schema(&elements, __schema) {
+            None => {}
+            Some(e) => {
+                return Err(format!(
+                    "Could not create data-record with schema: {:?}",
+                    e
+                )
+                .into())
+            }
+        }
+        Ok(DataRecord {
+            elements: elements,
+        })
+    }
+}
+
+// ======================
 // DataProject
 // ======================
 
@@ -64,7 +104,6 @@ pub struct DataProject {
     loaded: bool,
     extension: String,
     // === Data
-    raw_string: String,
     pub records: Vec<()>,
     pub schema: DataProjectSchema,
 }
@@ -153,7 +192,6 @@ impl DataProject {
             file_path: __fp.to_string(),
             loaded: false,
             extension: ext.to_string(),
-            raw_string: String::new(),
             records: Vec::new(),
             schema: schema,
         })
@@ -171,24 +209,23 @@ impl DataProject {
             match line {
                 Err(e) => {
                     errors.push(format!("Could not read line: {}", e));
-                    continue
-                },
-                Ok(v) => {
-                    lines.push(v)
+                    continue;
                 }
+                Ok(v) => lines.push(v),
             }
         }
         if errors.len() != 0 {
-            return Err(errors.join(",").into())
+            return Err(errors.join(",").into());
         }
         Ok(lines)
     }
 
-    fn read_data_by_file_type(__path: &str, __extension: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    fn read_data_by_file_type(
+        __path: &str,
+        __extension: &str,
+    ) -> Result<Vec<String>, Box<dyn Error>> {
         match __extension {
-            "csv" | ".csv" => {
-                return Self::read_data_csv(&__path)
-            }   
+            "csv" | ".csv" => return Self::read_data_csv(&__path),
             _ => {
                 return Err(format!(
                     "Behaviour for this file type/extension is not implemented: {:?}",
@@ -201,14 +238,26 @@ impl DataProject {
 
     pub fn load(&mut self) -> Result<(), Box<dyn Error>> {
         if self.loaded == true {
-            return Err("Project has already been loaded.".into())
+            return Err("Project has already been loaded.".into());
         }
+    
         let data = match Self::read_data_by_file_type(&self.file_path, &self.extension) {
             Err(e) => return Err(e),
-            Ok(v) => v
+            Ok(v) => v,
         };
 
-        println!("{:?}", data);
+        let mut records: Vec<DataRecord> = Vec::new();
+        for row in data {
+            let record = DataRecord::new(&row, &self.schema);
+            match record {
+                Ok(val) => {
+                    records.push(val);
+                },
+                Err(e) => return Err(e)
+            }
+        }
+        println!("{:?}", records);
+
         Ok(())
     }
 }
