@@ -62,7 +62,6 @@ mod test_csv {
             .collect();
         let schema_chars = DataProjectSchema::new(hd_chars.clone());
         assert!(schema_chars.is_ok());
-        println!("{:?}", schema_chars)
     }
 
     #[test]

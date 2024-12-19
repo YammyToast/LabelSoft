@@ -56,12 +56,16 @@ fn main() {
     };
 
     log::info!("Launching with mode: {:?}", config.launch_mode);
-    let test: DataProject = match DataProject::new_infer_schema("tests/assets/good.csv") {
+    let mut test: DataProject = match DataProject::new_infer_schema("tests/assets/good.csv") {
         None => {
             error!("Could not create Data project");
             exit(1)
         }
         Some(v) => v,
     };
-    info!("{:?}", test.schema);
+
+    let _ = match test.load() {
+        Ok(_) => {},
+        Err(e) => {error!("{}", e)}
+    };
 }

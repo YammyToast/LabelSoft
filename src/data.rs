@@ -1,6 +1,7 @@
 use std::error::Error;
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::{BufRead, BufReader};
+use std::ops::Not;
 use std::{collections::HashMap, path::Path};
 
 use log::{debug, error, info, log_enabled, Level, Log};
@@ -61,6 +62,7 @@ impl DataProjectSchema {
 pub struct DataProject {
     file_path: String,
     loaded: bool,
+    extension: String,
     // === Data
     raw_string: String,
     pub records: Vec<()>,
@@ -85,13 +87,12 @@ impl DataProject {
         return Ok(first_line);
     }
 
-    fn get_schema_by_file_type(__path: &Path) -> Result<DataProjectSchema, Box<dyn Error>> {
-        let ext = match __path.extension() {
-            Some(v) => v.to_str().unwrap(),
-            None => return Err("Could not extract file extension".into()),
-        };
+    fn get_schema_by_file_type(
+        __path: &Path,
+        __extension: &str,
+    ) -> Result<DataProjectSchema, Box<dyn Error>> {
         // Define behaviour on a file type basis
-        match ext {
+        match __extension {
             "csv" | ".csv" => {
                 let header_str = match Self::read_first_line(__path) {
                     Err(e) => return Err(format!("Could not read CSV headers: {:?}", e).into()),
@@ -107,7 +108,7 @@ impl DataProject {
             _ => {
                 return Err(format!(
                     "Behaviour for this file type/extension is not implemented: {:?}",
-                    ext
+                    __extension
                 )
                 .into())
             }
@@ -133,7 +134,15 @@ impl DataProject {
         if path.exists() == false {
             return None;
         }
-        let schema = match Self::get_schema_by_file_type(path) {
+        let ext = match path.extension() {
+            Some(v) => v.to_str().unwrap(),
+            None => {
+                log::error!("Could not extract file extension");
+                return None;
+            }
+        };
+
+        let schema = match Self::get_schema_by_file_type(path, ext) {
             Ok(v) => v,
             Err(e) => {
                 log::error!("{}", e);
@@ -143,9 +152,63 @@ impl DataProject {
         Some(DataProject {
             file_path: __fp.to_string(),
             loaded: false,
+            extension: ext.to_string(),
             raw_string: String::new(),
             records: Vec::new(),
             schema: schema,
         })
+    }
+
+    fn read_data_csv(__path: &str) -> Result<Vec<String>, Box<dyn Error>> {
+        let f = File::open(__path).unwrap();
+        let mut reader = BufReader::new(f).lines();
+        // skip the first line as we've already read it as the header.
+        let _ = reader.next();
+
+        let mut errors: Vec<String> = Vec::new();
+        let mut lines: Vec<String> = Vec::new();
+        for line in reader {
+            match line {
+                Err(e) => {
+                    errors.push(format!("Could not read line: {}", e));
+                    continue
+                },
+                Ok(v) => {
+                    lines.push(v)
+                }
+            }
+        }
+        if errors.len() != 0 {
+            return Err(errors.join(",").into())
+        }
+        Ok(lines)
+    }
+
+    fn read_data_by_file_type(__path: &str, __extension: &str) -> Result<Vec<String>, Box<dyn Error>> {
+        match __extension {
+            "csv" | ".csv" => {
+                return Self::read_data_csv(&__path)
+            }   
+            _ => {
+                return Err(format!(
+                    "Behaviour for this file type/extension is not implemented: {:?}",
+                    __extension
+                )
+                .into())
+            }
+        }
+    }
+
+    pub fn load(&mut self) -> Result<(), Box<dyn Error>> {
+        if self.loaded == true {
+            return Err("Project has already been loaded.".into())
+        }
+        let data = match Self::read_data_by_file_type(&self.file_path, &self.extension) {
+            Err(e) => return Err(e),
+            Ok(v) => v
+        };
+
+        println!("{:?}", data);
+        Ok(())
     }
 }
