@@ -64,8 +64,15 @@ fn main() {
         Some(v) => v,
     };
 
-    let _ = match test.load() {
-        Ok(_) => {},
+    match test.load() {
+        Ok(_) => {info!("Loaded Project: {}", test.file_path)},
         Err(e) => {error!("{}", e)}
     };
+
+    let schema = test.schema.clone();
+    let key = "payment_method";
+    for record in test {
+        let x = record[key].clone();
+        // println!("x: {:?}", x);
+    }
 }

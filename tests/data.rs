@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test_csv {
-    use std::{collections::HashMap, hash::Hash, path::Path};
+    use std::{any::{type_name, Any}, collections::HashMap, hash::Hash, path::Path};
 
     use LabelSoft::data::{DataProject, DataProjectSchema};
     const FP_GOOD: &str = "tests/assets/good.csv";
@@ -62,6 +62,39 @@ mod test_csv {
             .collect();
         let schema_chars = DataProjectSchema::new(hd_chars.clone());
         assert!(schema_chars.is_ok());
+    }
+
+    #[test]
+    fn test_data_indexing() {
+        let mut project = DataProject::new_infer_schema(FP_GOOD).unwrap();
+        let _ = project.load().unwrap();
+        let schema = &project.schema.clone();
+        let mut iter = project.into_iter();
+        let record = iter.next();
+        // dbl check that the record is successfully generated from the iterator.
+        assert!(record.is_some());
+        let rec = record.unwrap();
+        // ==== test schema get index
+        // the column will rotate on a runtime basis.
+        let first = schema.cols.iter().next().unwrap();
+        let test_index = schema.get_index(first.0);
+        assert!(test_index.is_some());
+        assert_eq!(test_index.unwrap(), first.1);       
+        // ==== test record indexing
+        // good index
+        let element_good = &rec[first.0];
+        // assert!(element_good.type_id())
+        assert_eq!(element_good.type_id(), String::new().type_id());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_data_index_invalid() {
+        let mut project = DataProject::new_infer_schema(FP_GOOD).unwrap();
+        let _ = project.load().unwrap();
+        let mut iter = project.into_iter();
+        let record = iter.next().unwrap();
+        let _ = record["INVALID_KEY"];
     }
 
     #[test]

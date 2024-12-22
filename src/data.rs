@@ -1,10 +1,9 @@
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader};
-use std::ops::Not;
+use std::ops::Index;
 use std::{collections::HashMap, path::Path};
 
-use log::{debug, error, info, log_enabled, Level, Log};
 // ======================
 // Schema
 // ======================
@@ -50,13 +49,18 @@ impl DataProjectSchema {
             num_cols: *num_cols,
         })
     }
+
+    pub fn get_index(&self, __key: &str) -> Option<&usize> {
+        let index = self.cols.get(__key);
+        index
+    }
 }
 
 // ======================
 // DataRecord
 // ======================
-#[derive(Debug)]
-struct DataRecord {
+#[derive(Debug, Clone)]
+pub struct DataRecord {
     elements: Vec<String>,
 }
 
@@ -66,7 +70,7 @@ impl DataRecord {
         __schema: &DataProjectSchema,
     ) -> Option<Box<dyn Error>> {
         if __elements.len() != __schema.num_cols {
-            return Some(format!("Number of values does not match columns in schema").into())
+            return Some(format!("Number of values does not match columns in schema").into());
         }
         None
     }
@@ -79,16 +83,28 @@ impl DataRecord {
         match Self::check_against_schema(&elements, __schema) {
             None => {}
             Some(e) => {
-                return Err(format!(
-                    "Could not create data-record with schema: {:?}",
-                    e
-                )
-                .into())
+                return Err(format!("Could not create data-record with schema: {:?}", e).into())
             }
         }
-        Ok(DataRecord {
-            elements: elements,
-        })
+        Ok(DataRecord { elements: elements })
+    }
+}
+
+// ======================
+// DataRecordIndexed
+// ======================
+pub struct DataRecordIndexed {
+    record: DataRecord,
+    schema: DataProjectSchema,
+}
+
+impl Index<&str> for DataRecordIndexed {
+    type Output = String;
+
+    fn index(&self, __key: &str) -> &Self::Output {
+        let index = self.schema.get_index(__key).unwrap();
+        let element = self.record.elements.index(*index);
+        element
     }
 }
 
@@ -100,11 +116,11 @@ impl DataRecord {
 /// # Data Project
 ///
 pub struct DataProject {
-    file_path: String,
+    pub file_path: String,
     loaded: bool,
     extension: String,
     // === Data
-    pub records: Vec<()>,
+    pub records: Vec<DataRecord>,
     pub schema: DataProjectSchema,
 }
 
@@ -240,7 +256,7 @@ impl DataProject {
         if self.loaded == true {
             return Err("Project has already been loaded.".into());
         }
-    
+
         let data = match Self::read_data_by_file_type(&self.file_path, &self.extension) {
             Err(e) => return Err(e),
             Ok(v) => v,
@@ -252,12 +268,29 @@ impl DataProject {
             match record {
                 Ok(val) => {
                     records.push(val);
-                },
-                Err(e) => return Err(e)
+                }
+                Err(e) => return Err(e),
             }
         }
-        println!("{:?}", records);
-
+        self.records = records;
         Ok(())
+    }
+}
+
+impl IntoIterator for DataProject {
+    type Item = DataRecordIndexed;
+
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let indexed_records: Vec<DataRecordIndexed> = self
+            .records
+            .iter()
+            .map(|x| DataRecordIndexed {
+                record: x.clone(),
+                schema: self.schema.clone(),
+            })
+            .collect();
+        indexed_records.into_iter()
     }
 }
