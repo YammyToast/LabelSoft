@@ -1,0 +1,26 @@
+order_id,customer_id,product_id,quantity,unit_price,order_date,shipping_address,payment_method,order_status,total_price
+1,1,1,44,664.31,5/30/2020,7107 Tomscot Lane,Apple Pay,Pending,8436.81
+2,2,2,72,233.97,3/26/2022,980 Lakewood Gardens Way,Credit Card,Delivered,8620.3
+3,3,3,85,781.44,11/6/2020,2299 Anthes Court,PayPal,Delivered,4218.42
+4,4,4,86,376.39,2/17/2022,3 Meadow Valley Parkway,Apple Pay,Shipped,3839.16
+5,5,5,80,545.15,4/10/2022,9 Wayridge Road,PayPal,Pending,2363.81
+6,6,6,34,215.79,9/4/2022,21 Farwell Alley,PayPal,Shipped,7460.09
+7,7,7,5,487.25,4/20/2022,48 Manley Crossing,Credit Card,Pending,5974.1
+8,8,8,46,779.42,4/17/2020,49 Manley Alley,PayPal,Shipped,8952.83
+9,9,9,26,438.97,1/30/2022,6201 Pond Park,Apple Pay,Pending,7292.93
+10,10,10,97,812.56,6/21/2021,26 Oak Center,Credit Card,Delivered,6202.51
+11,11,11,90,316.58,6/13/2020,11779 Meadow Valley Place,Apple Pay,Shipped,5740.0
+12,12,12,60,642.23,4/15/2022,4 Arizona Terrace,Apple Pay,Pending,5404.92
+13,13,13,30,254.25,8/31/2020,80 Ridgeview Crossing,Apple Pay,Pending,2811.23
+14,14,14,87,366.54,11/18/2021,680 Bellgrove Lane,PayPal,Pending,3543.92
+15,15,15,20,254.55,4/30/2022,45 Clarendon Point,Credit Card,Delivered,1942.08
+16,16,16,36,247.67,6/19/2021,424 Upham Park,PayPal,Delivered,1175.54
+17,17,17,13,430.42,11/6/2022,069 Fieldstone Street,Credit Card,Shipped,4215.35
+18,18,18,90,386.59,4/15/2022,5 Commercial Junction,Credit Card,Pending,567.62
+19,19,19,49,571.49,4/6/2022,2 Parkside Crossing,PayPal,Pending,1988.26
+20,20,20,8,153.7,6/18/2021,88 Packers Park,Credit Card,Pending,1635.9
+21,21,21,46,764.53,6/29/2020,84163 Crescent Oaks Drive,Credit Card,Shipped,8231.08
+22,22,22,23,905.69,5/7/2021,81473 Nobel Point,PayPal,Delivered,5570.61
+23,23,23,84,535.46,12/5/2020,43783 Acker Hill,Credit Card,Pending,1411.39
+24,24,24,50,422.79,8/17/2022,08 Portage Way,Credit Card,Pending,381.95
+25,25,25,52,506.22,1/26/2022,8 Loeprich Pass,Apple Pay,Delivered,3318.7
