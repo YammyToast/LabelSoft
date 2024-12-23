@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test_csv {
-    use std::{any::{type_name, Any}, collections::HashMap, hash::Hash, path::Path};
+    use std::{any::Any, collections::HashMap, path::Path};
 
     use LabelSoft::data::{DataProject, DataProjectSchema};
     const FP_GOOD: &str = "tests/assets/good.csv";
@@ -79,7 +79,7 @@ mod test_csv {
         let first = schema.cols.iter().next().unwrap();
         let test_index = schema.get_index(first.0);
         assert!(test_index.is_some());
-        assert_eq!(test_index.unwrap(), first.1);       
+        assert_eq!(test_index.unwrap(), first.1);
         // ==== test record indexing
         // good index
         let element_good = &rec[first.0];

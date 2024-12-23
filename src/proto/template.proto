@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package template;
+
+message Template {
+    string version = 1;
+}

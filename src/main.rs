@@ -69,10 +69,5 @@ fn main() {
         Err(e) => {error!("{}", e)}
     };
 
-    let schema = test.schema.clone();
-    let key = "payment_method";
-    for record in test {
-        let x = record[key].clone();
-        // println!("x: {:?}", x);
-    }
+
 }
