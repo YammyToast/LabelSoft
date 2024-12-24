@@ -15,6 +15,7 @@ message Template {
 
     repeated DisplayObject root = 3;
     Meta meta = 4;
+    map<string, PageStyle> page_styles = 5;
 }   
 
 message DisplayObject {
