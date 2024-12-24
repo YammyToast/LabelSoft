@@ -1,8 +1,10 @@
 use clap::Parser;
 use data::DataProject;
 use env_logger::{Builder, Env, WriteStyle};
+use ini::ini;
 use log::{debug, error, info, log_enabled, Level, Log};
-use std::{env::args, fmt::Debug, io::Write, process::exit};
+
+use std::{env::args, fmt::Debug, io::Write, path::Path, process::exit};
 
 mod data;
 // ======================
@@ -48,6 +50,23 @@ fn init_logger() {
     let env = Env::default().default_filter_or("info");
     Builder::from_env(env).default_format().init();
 }
+
+fn get_config_version(__ini_path: &str) -> Result<String, Box<dyn std::error::Error>> {
+    if !Path::new(__ini_path).exists() {
+        return Err(format!("Could not locate version file: {}", __ini_path).into());
+    }
+    let conf = ini!(__ini_path);
+    let version = conf["meta"]["version"].clone();
+    if version.is_none() {
+        return Err(format!(
+            "Could not find version attribute in file: \'{:?}\'",
+            __ini_path
+        )
+        .into());
+    }
+    return Ok(version.unwrap());
+}
+
 fn main() {
     init_logger();
     let args = Args::parse();
@@ -56,18 +75,14 @@ fn main() {
     };
 
     log::info!("Launching with mode: {:?}", config.launch_mode);
-    let mut test: DataProject = match DataProject::new_infer_schema("tests/assets/good.csv") {
-        None => {
-            error!("Could not create Data project");
-            exit(1)
+
+    let version_ini_filepath = "VERSION.ini";
+    let software_version_fmt = match get_config_version(&version_ini_filepath) {
+        Err(e) => {
+            error!("Could not load version config: {:?}", e);
+            exit(1);
         }
-        Some(v) => v,
+        Ok(v) => v,
     };
-
-    match test.load() {
-        Ok(_) => {info!("Loaded Project: {}", test.file_path)},
-        Err(e) => {error!("{}", e)}
-    };
-
-
+    println!("{:?}", software_version_fmt);
 }

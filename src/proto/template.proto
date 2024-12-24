@@ -1,7 +1,32 @@
 syntax = "proto3";
 
+import "display_objects.proto";
+
 package template;
 
 message Template {
-    string version = 1;
+    reserved 2;
+    message Meta {
+        string display_name = 1;
+        string author = 2;
+        int32 date_of_creation = 3;
+        string software_version = 4;
+    }
+
+    repeated DisplayObject root = 3;
+    Meta meta = 4;
+}   
+
+message DisplayObject {
+    oneof content {
+        Text text = 1;
+        Image image = 2;
+    }
+}
+
+message PageStyle {
+    string style_name = 1;
+    float width = 2;
+    float height = 3;
+    repeated float margins = 4;   
 }
