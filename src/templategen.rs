@@ -2,9 +2,12 @@ use std::collections::HashMap;
 
 use eframe::emath::Float;
 
-use crate::templates::template::{
-    display_object::Content, template::Meta, DisplayObject, Image, PageStyle, Position, Template,
-    Text,
+use crate::{
+    data::DataProjectSchema,
+    templates::template::{
+        display_object::Content, template::Meta, DisplayObject, Image, PageStyle, Position,
+        Template, Text,
+    },
 };
 
 // ======================
@@ -63,12 +66,32 @@ impl PageStyleConfig {
 // Template Initialization
 // ======================
 
-struct TemplateProject {
+pub struct TemplateProject {
     pub template: Template,
-    
+    pub schema: DataProjectSchema,
 }
 
-impl Template {    
+impl TemplateProject {
+    pub fn new(__template: Template, __schema: DataProjectSchema) -> Self {
+        TemplateProject {
+            template: __template,
+            schema: __schema,
+        }
+    }
+    pub fn add_text(&mut self, __text: Text) -> Result<(), Box<dyn std::error::Error>> {
+        // check that data column exists in the schema.
+        if !self.schema.cols.contains_key(&__text.data_column) {
+            return Err(format!("Schema does not contain column with name: \'{}\'", &__text.data_column).into())
+        }
+        
+        let mut object_wrapper = DisplayObject::default();
+        object_wrapper.content = Some(Content::Text(__text));
+        self.template.root.push(object_wrapper);
+        Ok(())
+    }
+}   
+
+impl Template {
     pub fn new(
         __display_name: String,
         __author: String,
@@ -91,18 +114,18 @@ impl Template {
         let mut page_styles = HashMap::new();
         let default_key: String = default_page_style.style_name.clone();
         page_styles.insert(default_key, default_page_style);
-        
+
         template.meta = Some(meta);
         template.page_styles = page_styles;
         return template;
     }
 
-    pub fn add_text(&mut self, __text_obj: Text) -> Result<(), Box<dyn std::error::Error>> {
-        let mut object_wrapper = DisplayObject::default();
-        object_wrapper.content = Some(Content::Text(__text_obj));
-        self.root.push(object_wrapper);
-        Ok(())
-    }
+    // pub fn add_text(&mut self, __text_obj: Text) -> Result<(), Box<dyn std::error::Error>> {
+    //     let mut object_wrapper = DisplayObject::default();
+    //     object_wrapper.content = Some(Content::Text(__text_obj));
+    //     self.root.push(object_wrapper);
+    //     Ok(())
+    // }
 }
 
 impl Text {
