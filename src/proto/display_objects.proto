@@ -9,8 +9,8 @@ message Position {
 
 message Text {
     Position position = 1;
-    uint32 max_width = 2;
-    uint32 max_height = 3;
+    float max_width = 2;
+    float max_height = 3;
     string data_column = 4;
     uint32 font_size = 5;
     string font = 6;
@@ -18,7 +18,7 @@ message Text {
 
 message Image {
     Position position = 1;
-    uint32 width = 2;
-    uint32 height = 3;
+    float width = 2;
+    float height = 3;
     string image_path = 4;
 }

@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use eframe::emath::Float;
 
-use crate::templates::template::{template::Meta, PageStyle, Template};
+use crate::templates::template::{
+    display_object::Content, template::Meta, DisplayObject, Image, PageStyle, Position, Template,
+    Text,
+};
 
 // ======================
 // Attribute Bundlers
@@ -23,15 +26,30 @@ impl PageStyleConfig {
         __page_height: f32,
         __margins: [f32; 4],
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        // value checks
+        // ==== value checks
+        // width
         if __page_width.is_sign_negative() {
-            return Err(format!("Page Style Width is negative or other invalid: {:?}", __page_width).into());
+            return Err(format!(
+                "Page Style Width is negative or other invalid: {:?}",
+                __page_width
+            )
+            .into());
         }
-
+        if __page_width.eq(&0.0) {
+            return Err("Page Style Width is zero and therefore invalid.".into());
+        }
+        // height
         if __page_height.is_sign_negative() {
-            return Err(format!("Page Style Height is negative or other invalid: {:?}", __page_height).into());
+            return Err(format!(
+                "Page Style Height is negative or other invalid: {:?}",
+                __page_height
+            )
+            .into());
         }
-
+        if __page_height.eq(&0.0) {
+            return Err("Page Style Height is zero and therefore invalid.".into());
+        }
+        // ==== init
         Ok(PageStyleConfig {
             style_name: __style_name,
             page_width: __page_width,
@@ -45,32 +63,69 @@ impl PageStyleConfig {
 // Template Initialization
 // ======================
 
-pub fn init_template(
-    __display_name: String,
-    __author: String,
-    __software_version: String,
-    __default_page_style: PageStyleConfig,
-) -> Template {
-    let mut template = Template::default();
-
-    let mut meta = Meta::default();
-    meta.display_name = __display_name;
-    meta.author = __author;
-    meta.software_version = __software_version;
-
-    let mut default_page_style = PageStyle::default();
-    default_page_style.style_name = __default_page_style.style_name;
-    default_page_style.height = __default_page_style.page_height;
-    default_page_style.width = __default_page_style.page_width;
-    // cast array of 4 into vector. protobuffers doesn't have arrays afaik.
-    default_page_style.margins = __default_page_style.margins.into();
-    let mut page_styles = HashMap::new();
-    let default_key: String = default_page_style.style_name.clone();
-    page_styles.insert(default_key, default_page_style);
-
-    template.meta = Some(meta);
-    template.page_styles = page_styles;
-    return template;
+struct TemplateProject {
+    pub template: Template,
+    
 }
 
-// pub fn create_template(__meta: Meta, __root = Vec<DisplayObject>)
+impl Template {    
+    pub fn new(
+        __display_name: String,
+        __author: String,
+        __software_version: String,
+        __default_page_style: PageStyleConfig,
+    ) -> Self {
+        let mut template = Template::default();
+
+        let mut meta = Meta::default();
+        meta.display_name = __display_name;
+        meta.author = __author;
+        meta.software_version = __software_version;
+
+        let mut default_page_style = PageStyle::default();
+        default_page_style.style_name = __default_page_style.style_name;
+        default_page_style.height = __default_page_style.page_height;
+        default_page_style.width = __default_page_style.page_width;
+        // cast array of 4 into vector. protobuffers doesn't have arrays afaik.
+        default_page_style.margins = __default_page_style.margins.into();
+        let mut page_styles = HashMap::new();
+        let default_key: String = default_page_style.style_name.clone();
+        page_styles.insert(default_key, default_page_style);
+        
+        template.meta = Some(meta);
+        template.page_styles = page_styles;
+        return template;
+    }
+
+    pub fn add_text(&mut self, __text_obj: Text) -> Result<(), Box<dyn std::error::Error>> {
+        let mut object_wrapper = DisplayObject::default();
+        object_wrapper.content = Some(Content::Text(__text_obj));
+        self.root.push(object_wrapper);
+        Ok(())
+    }
+}
+
+impl Text {
+    pub fn new(
+        __x_pos: f32,
+        __y_pos: f32,
+        __max_width: f32,
+        __max_height: f32,
+        __data_column_name: String,
+        __font_size: u32,
+        __font: String,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let mut position = Position::default();
+        position.x = __x_pos;
+        position.y = __y_pos;
+
+        Ok(Text {
+            position: Some(position),
+            max_width: __max_width,
+            max_height: __max_height,
+            data_column: __data_column_name,
+            font_size: __font_size,
+            font: __font,
+        })
+    }
+}
