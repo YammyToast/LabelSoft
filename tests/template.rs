@@ -145,6 +145,7 @@ mod test_template {
         let schema = basic_schema();
         let mut templateproject = TemplateProject::new(template, schema);
 
+        // invalid image path
         let image_invalid_path = Image::new(
             0.0,
             0.0,
@@ -153,5 +154,7 @@ mod test_template {
             "INVALIDIMAGEPATH".to_string()
         );
         assert!(image_invalid_path.is_err());
+
+        // invalid measurements
     }
 }

@@ -29,26 +29,12 @@ impl PageStyleConfig {
     ) -> Result<Self, Box<dyn std::error::Error>> {
         // ==== value checks
         // width
-        if __page_width.is_sign_negative() {
-            return Err(format!(
-                "Page Style Width is negative or other invalid: {:?}",
-                __page_width
-            )
-            .into());
-        }
-        if __page_width.eq(&0.0) {
-            return Err("Page Style Width is zero and therefore invalid.".into());
+        if __page_width.le(&0.0) {
+            return Err(format!("Page width is less than zero: {:?}", __page_width).into());
         }
         // height
-        if __page_height.is_sign_negative() {
-            return Err(format!(
-                "Page Style Height is negative or other invalid: {:?}",
-                __page_height
-            )
-            .into());
-        }
-        if __page_height.eq(&0.0) {
-            return Err("Page Style Height is zero and therefore invalid.".into());
+        if __page_height.le(&0.0) {
+            return Err(format!("Page height is less than zero: {:?}", __page_height).into());
         }
         // ==== init
         Ok(PageStyleConfig {
@@ -179,6 +165,14 @@ impl Image {
         if !img_path.exists() {
             return Err(format!("Could not create image, path does not exist: {:?}", img_path).into());
         } 
+        // check measurements are valid
+        if __width.le(&0.0) {
+            return Err(format!("Width of image is less than 0: {:?}", __width).into());
+        }
+        if __height.le(&0.0) {
+            return Err(format!("Height of image is less than 0: {:?}", __height).into());
+        }
+
         Ok(Image {
             position: Some(position),
             width: __width,
