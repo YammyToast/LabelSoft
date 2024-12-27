@@ -156,5 +156,21 @@ mod test_template {
         assert!(image_invalid_path.is_err());
 
         // invalid measurements
+        let image_invalid_width = Image::new(
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            "tests/assets/examplebox.png".to_string()
+        );
+        assert!(image_invalid_width.is_err());
+        let image_invalid_height = Image::new(
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            "tests/assets/examplebox.png".to_string()
+        );
+        assert!(image_invalid_height.is_err());
     }
 }
