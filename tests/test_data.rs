@@ -1,8 +1,12 @@
+mod util;
+
 #[cfg(test)]
-mod test_csv {
+pub mod test_csv {
     use std::{any::Any, collections::HashMap, path::Path};
     use LabelSoft::data::{DataProject, DataProjectSchema};
-    const FP_GOOD: &str = "tests/assets/good.csv";
+
+    use super::util::{basic_dataproject, basic_page_style, basic_schema, basic_template, FP_GOOD};
+
 
     #[test]
     fn test_headers_csv() {

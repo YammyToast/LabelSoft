@@ -6,13 +6,11 @@ pub mod templates {
     }
 }
 
-use crate::{
-    data::DataProjectSchema,
-};
+use crate::data::DataProjectSchema;
 
 use templates::template::{
-    display_object::Content, template::Meta, DisplayObject, Image, PageStyle, Position,
-    Template, Text,
+    display_object::Content, template::Meta, DisplayObject, Image, PageStyle, Position, Template,
+    Text,
 };
 
 // ======================
@@ -170,8 +168,12 @@ impl Image {
         // check that image path exists.
         let img_path = Path::new(&__image_path);
         if !img_path.exists() {
-            return Err(format!("Could not create image, path does not exist: {:?}", img_path).into());
-        } 
+            return Err(format!(
+                "Could not create image, path does not exist: {:?}",
+                img_path
+            )
+            .into());
+        }
         // check measurements are valid
         if __width.le(&0.0) {
             return Err(format!("Width of image is less than 0: {:?}", __width).into());
@@ -184,7 +186,7 @@ impl Image {
             position: Some(position),
             width: __width,
             height: __height,
-            image_path: __image_path
+            image_path: __image_path,
         })
     }
 }

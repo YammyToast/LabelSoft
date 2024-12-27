@@ -94,7 +94,7 @@ impl DataRecord {
 // DataRecordIndexed
 // ======================
 pub struct DataRecordIndexed {
-    record: DataRecord,
+    pub record: DataRecord,
     schema: DataProjectSchema,
 }
 

@@ -1,5 +1,7 @@
+mod util;
+
 #[cfg(test)]
-mod test_template {
+pub mod test_template {
     use LabelSoft::{
         data::DataProjectSchema,
         templategen::{PageStyleConfig, TemplateProject, templates::template::{Image, Template, Text}},
@@ -7,27 +9,8 @@ mod test_template {
         // LabelSoft:: ::template::{Image, Template, Text},
     };
 
-    fn basic_page_style(__default_name: &String) -> PageStyleConfig {
-        PageStyleConfig::new(__default_name.clone(), 1280.0, 720.0, [1.0, 1.0, 1.0, 1.0]).unwrap()
-    }
+    use super::util::{basic_dataproject, basic_page_style, basic_schema, basic_template};
 
-    fn basic_template(__init_page_style: PageStyleConfig) -> Template {
-        Template::new(
-            "basic_template".to_string(),
-            "tester".to_string(),
-            "testver".to_string(),
-            __init_page_style,
-        )
-    }
-
-    fn basic_schema() -> DataProjectSchema {
-        let cols: Vec<String> = vec!["order_id", "address", "item_id", "cost"]
-            .iter()
-            .map(|v| v.to_string())
-            .collect();
-        let schema = DataProjectSchema::new(cols).unwrap();
-        return schema;
-    }
 
     #[test]
     fn test_init_template() {
