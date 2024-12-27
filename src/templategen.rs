@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use eframe::emath::Float;
+use std::{collections::HashMap, path::Path};
 
 use crate::{
     data::DataProjectSchema,
@@ -81,15 +79,26 @@ impl TemplateProject {
     pub fn add_text(&mut self, __text: Text) -> Result<(), Box<dyn std::error::Error>> {
         // check that data column exists in the schema.
         if !self.schema.cols.contains_key(&__text.data_column) {
-            return Err(format!("Schema does not contain column with name: \'{}\'", &__text.data_column).into())
+            return Err(format!(
+                "Schema does not contain column with name: \'{}\'",
+                &__text.data_column
+            )
+            .into());
         }
-        
+
         let mut object_wrapper = DisplayObject::default();
         object_wrapper.content = Some(Content::Text(__text));
         self.template.root.push(object_wrapper);
         Ok(())
     }
-}   
+
+    pub fn add_image(&mut self, __image: Image) -> Result<(), Box<dyn std::error::Error>> {
+        let mut object_wrapper = DisplayObject::default();
+        object_wrapper.content = Some(Content::Image(__image));
+        self.template.root.push(object_wrapper);
+        Ok(())
+    }
+}
 
 impl Template {
     pub fn new(
@@ -119,14 +128,11 @@ impl Template {
         template.page_styles = page_styles;
         return template;
     }
-
-    // pub fn add_text(&mut self, __text_obj: Text) -> Result<(), Box<dyn std::error::Error>> {
-    //     let mut object_wrapper = DisplayObject::default();
-    //     object_wrapper.content = Some(Content::Text(__text_obj));
-    //     self.root.push(object_wrapper);
-    //     Ok(())
-    // }
 }
+
+// ======================
+// Text Display Object
+// ======================
 
 impl Text {
     pub fn new(
@@ -149,6 +155,35 @@ impl Text {
             data_column: __data_column_name,
             font_size: __font_size,
             font: __font,
+        })
+    }
+}
+
+// ======================
+// Image Display Object
+// ======================
+
+impl Image {
+    pub fn new(
+        __x_pos: f32,
+        __y_pos: f32,
+        __width: f32,
+        __height: f32,
+        __image_path: String,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let mut position = Position::default();
+        position.x = __x_pos;
+        position.y = __y_pos;
+        // check that image path exists.
+        let img_path = Path::new(&__image_path);
+        if !img_path.exists() {
+            return Err(format!("Could not create image, path does not exist: {:?}", img_path).into());
+        } 
+        Ok(Image {
+            position: Some(position),
+            width: __width,
+            height: __height,
+            image_path: __image_path
         })
     }
 }

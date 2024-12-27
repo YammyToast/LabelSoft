@@ -3,7 +3,7 @@ mod test_template {
     use LabelSoft::{
         data::DataProjectSchema,
         templategen::{PageStyleConfig, TemplateProject},
-        templates::template::{Template, Text},
+        templates::template::{Image, Template, Text},
     };
 
     fn basic_page_style(__default_name: &String) -> PageStyleConfig {
@@ -74,6 +74,7 @@ mod test_template {
 
         let schema = basic_schema();
         let template_project = TemplateProject::new(template, schema);
+        assert_eq!(template_project.template.root.len(), 0);
     }
 
     #[test]
@@ -87,6 +88,7 @@ mod test_template {
 
         let mut templateproject = TemplateProject::new(template, schema);
 
+        // ==== ADD TEXT
         let text = Text::new(
             1.0,
             1.0,
@@ -97,10 +99,22 @@ mod test_template {
             "test".to_string(),
         )
         .unwrap();
-
         let add_text_res = templateproject.add_text(text);
         assert!(add_text_res.is_ok());
         assert_eq!(templateproject.template.root.len(), 1);
+
+        // ==== ADD IMAGE
+        let image = Image::new(
+            1.0,
+            1.0,
+            100.0,
+            100.0,
+            "tests/assets/examplebox.png".to_string(),
+        )
+        .unwrap();
+        let add_image_res = templateproject.add_image(image);
+        assert!(add_image_res.is_ok());
+        assert_eq!(templateproject.template.root.len(), 2);
     }
 
     #[test]
@@ -118,8 +132,26 @@ mod test_template {
             "INVALIDCOLUMNNAME".to_string(),
             10,
             "test".to_string(),
-        ).unwrap();
-
+        )
+        .unwrap();
+        // only check once it has been added to a project which contains the schema.
         assert!(templateproject.add_text(text_invalid_column_name).is_err());
+    }
+
+    #[test]
+    fn test_add_image_invalid() {
+        let style = basic_page_style(&"DEFAULT".to_string());
+        let template = basic_template(style);
+        let schema = basic_schema();
+        let mut templateproject = TemplateProject::new(template, schema);
+
+        let image_invalid_path = Image::new(
+            0.0,
+            0.0,
+            1.0,
+            1.0,
+            "INVALIDIMAGEPATH".to_string()
+        );
+        assert!(image_invalid_path.is_err());
     }
 }
