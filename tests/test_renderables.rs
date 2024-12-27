@@ -31,5 +31,6 @@ mod test_renderables {
         templateproject.add_text(text).unwrap();
 
         let builder = RenderableBuilder::new_from_template_and_data(templateproject, dataproject);
-    }
+        println!("{:?}", builder);
+    }   
 }

@@ -56,7 +56,7 @@ impl TextRenderable {
 
 #[derive(Debug)]
 pub struct RenderableBuilder {
-    page_object_lists: Vec<Vec<Box<dyn Any>>>,
+    page_grouped_object_lists: Vec<Vec<Box<dyn Any>>>,
 }
 
 impl RenderableBuilder {
@@ -72,7 +72,13 @@ impl RenderableBuilder {
                     // get the column, which narrows down to the element/value for this text object.
                     let text_value = &__record[&v.data_column];
                     let renderable = TextRenderable::new_from_text(v, text_value.to_string());
-                    println!("{:?}", renderable);
+                    match renderable {
+                        Err(e) => {
+                            error!("Couldn't convert Text into TextRenderable: {:?}", e);
+                            continue;
+                        },
+                        Ok(v) => out.push(Box::new(v))
+                    }
                 }
                 Some(Content::Image(v)) => {
                     println!("{:?}", v);
@@ -91,13 +97,17 @@ impl RenderableBuilder {
         __data: DataProject,
     ) -> Self {
         let schema = __data.schema.clone();
+        let mut page_grouped_object_lists: Vec<Vec<Box<dyn Any>>> = Vec::new();
+        // iterate over each record. generated objects are grouped into separate arrays
+        // which identify individual pages. one record = one page.
         for recordindexed in __data.into_iter() {
             let template_objects = __templateproject.template.root.clone();
             let generated_objects =
                 Self::convert_template_objects(template_objects, recordindexed, &schema);
+            page_grouped_object_lists.push(generated_objects);
         }
         RenderableBuilder {
-            page_object_lists: Vec::new(),
+            page_grouped_object_lists: page_grouped_object_lists,
         }
     }
 }
