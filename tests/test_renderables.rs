@@ -8,7 +8,6 @@ mod test_renderables {
 
     use super::util::{basic_dataproject, basic_page_style, basic_schema, basic_template};
 
-
     #[test]
     fn test_renderablebuilder_init() {
         // build the test template
@@ -17,7 +16,7 @@ mod test_renderables {
         // load the test data
         let dataproject = basic_dataproject();
         // combine
-        let mut templateproject = TemplateProject::new(template, dataproject.schema);
+        let mut templateproject = TemplateProject::new(template, dataproject.schema.clone());
 
         let text = Text::new(
             1.0,
@@ -29,10 +28,8 @@ mod test_renderables {
             "test_font".to_string(),
         )
         .unwrap();
-        // templateproject.add_text(text).unwrap();
+        templateproject.add_text(text).unwrap();
 
-
-
-        // let builder = RenderableBuilder::new_from_template_and_data(templateproject, dataproject);
+        let builder = RenderableBuilder::new_from_template_and_data(templateproject, dataproject);
     }
 }
