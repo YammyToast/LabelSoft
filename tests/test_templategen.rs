@@ -2,8 +2,9 @@
 mod test_template {
     use LabelSoft::{
         data::DataProjectSchema,
-        templategen::{PageStyleConfig, TemplateProject},
-        templates::template::{Image, Template, Text},
+        templategen::{PageStyleConfig, TemplateProject, templates::template::{Image, Template, Text}},
+        
+        // LabelSoft:: ::template::{Image, Template, Text},
     };
 
     fn basic_page_style(__default_name: &String) -> PageStyleConfig {

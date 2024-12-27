@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod test_csv {
     use std::{any::Any, collections::HashMap, path::Path};
-
     use LabelSoft::data::{DataProject, DataProjectSchema};
     const FP_GOOD: &str = "tests/assets/good.csv";
 
