@@ -1,11 +1,18 @@
 use std::{collections::HashMap, path::Path};
 
+pub mod templates {
+    pub mod template {
+        include!(concat!(env!("OUT_DIR"), "/template.rs"));
+    }
+}
+
 use crate::{
     data::DataProjectSchema,
-    templates::template::{
-        display_object::Content, template::Meta, DisplayObject, Image, PageStyle, Position,
-        Template, Text,
-    },
+};
+
+use templates::template::{
+    display_object::Content, template::Meta, DisplayObject, Image, PageStyle, Position,
+    Template, Text,
 };
 
 // ======================

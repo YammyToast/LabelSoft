@@ -7,7 +7,9 @@ use log::{debug, error, info, log_enabled, Level, Log};
 use std::{env::args, fmt::Debug, io::Write, path::Path, process::exit};
 
 mod data;
+mod templategen;
 mod renderables;
+
 // ======================
 // Launch Args
 // ======================
