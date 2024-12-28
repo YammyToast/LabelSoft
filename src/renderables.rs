@@ -15,12 +15,12 @@ use crate::templategen::TemplateProject;
 
 #[derive(Debug)]
 struct TextRenderable {
-    position: Position,
-    lines: Vec<String>,
-    max_width: f32,
-    max_height: f32,
-    font_size: u32,
-    font: String,
+    pub position: Position,
+    pub lines: Vec<String>,
+    pub max_width: f32,
+    pub max_height: f32,
+    pub font_size: u32,
+    pub font: String,
 }
 
 impl TextRenderable {
@@ -56,12 +56,12 @@ impl TextRenderable {
 // Image Renderable
 // ======================
 
-struct ImageRenderable {
-    position: Position,
-    image_path: String,
-    image_data: DynamicImage,
-    width: u32,
-    height: u32,
+pub struct ImageRenderable {
+    pub position: Position,
+    pub image_path: String,
+    pub image_data: DynamicImage,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl ImageRenderable {
@@ -105,8 +105,6 @@ impl ImageRenderable {
         let resize_width: u32 = __image.width.floor() as u32;
         let resize_height: u32 = __image.height.floor() as u32;
         let resized = raw_img.resize(resize_width, resize_height, image::imageops::FilterType::Lanczos3);
-
-        // resized.save_with_format("./test.png", image::ImageFormat::Png);
 
         let position = __image.position.unwrap();
         Ok(ImageRenderable {
