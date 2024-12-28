@@ -2,7 +2,7 @@ mod util;
 
 #[cfg(test)]
 mod test_renderables {
-    use LabelSoft::templategen::templates::template::Text;
+    use LabelSoft::templategen::templates::template::{Image, Text};
     use LabelSoft::templategen::TemplateProject;
     use LabelSoft::{renderables::RenderableBuilder, templategen::templates::template::Template};
 
@@ -30,7 +30,17 @@ mod test_renderables {
         .unwrap();
         templateproject.add_text(text).unwrap();
 
+        let image = Image::new(
+            1.0,
+            200.0,
+            64.0,
+            64.0,
+            "tests/assets/examplebox.png".to_string(),
+        )
+        .unwrap();
+        templateproject.add_image(image).unwrap();
+
         let builder = RenderableBuilder::new_from_template_and_data(templateproject, dataproject);
-        println!("{:?}", builder);
-    }   
+        // println!("{:?}", builder);
+    }
 }

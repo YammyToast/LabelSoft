@@ -1,10 +1,12 @@
 use std::any::Any;
+use std::path::Path;
 
+use image::{DynamicImage, ImageReader};
 use log::error;
 
 use crate::data::{DataProject, DataProjectSchema, DataRecord, DataRecordIndexed};
 use crate::templategen::templates::template::display_object::Content;
-use crate::templategen::templates::template::{DisplayObject, Position, Text};
+use crate::templategen::templates::template::{DisplayObject, Image, Position, Text};
 use crate::templategen::TemplateProject;
 
 // ======================
@@ -51,6 +53,73 @@ impl TextRenderable {
 }
 
 // ======================
+// Image Renderable
+// ======================
+
+struct ImageRenderable {
+    position: Position,
+    image_path: String,
+    image_data: DynamicImage,
+    width: u32,
+    height: u32,
+}
+
+impl ImageRenderable {
+    fn handle_image_load(__img_path: &Path) -> Result<DynamicImage, Box<dyn std::error::Error>> {
+        let ext = match __img_path.extension() {
+            Some(ext) => ext,
+            None => {
+                return Err(format!("Could not get image extension for: {:?}", __img_path).into())
+            }
+        };
+        let data = match ext.to_str().unwrap() {
+            "png" | "jpg" | "jpeg" => {
+                let reader = ImageReader::open(__img_path).unwrap();
+                let decode_result = reader.decode();
+                let dyn_image = match decode_result {
+                    Ok(v) => v,
+                    Err(e) => return Err(e.into())
+                };
+                dyn_image
+            },
+            _ => {
+                return Err(format!("ImageRenderable is not implemented for extension: {:?}", ext).into())
+            }
+        };
+        return Ok(data)
+    }
+
+    pub fn new_from_image(__image: Image) -> Result<Self, Box<dyn std::error::Error>> {
+        let img_path = Path::new(&__image.image_path);
+        // this should never throw unless this module is used in the
+        // wrong order.
+        if !img_path.exists() {
+            return Err(format!("Image path doesn't exist: {:?}", img_path).into());
+        }
+        let raw_img = match Self::handle_image_load(img_path) {
+            Err(e) => return Err(format!("Couldn't load image data: {:?}", e).into()),
+            Ok(data) => data
+        };
+        
+        // resize the image per the user's input.
+        let resize_width: u32 = __image.width.floor() as u32;
+        let resize_height: u32 = __image.height.floor() as u32;
+        let resized = raw_img.resize(resize_width, resize_height, image::imageops::FilterType::Lanczos3);
+
+        // resized.save_with_format("./test.png", image::ImageFormat::Png);
+
+        let position = __image.position.unwrap();
+        Ok(ImageRenderable {
+            position: position,
+            image_path: __image.image_path,
+            image_data: resized,
+            width: resize_width,
+            height: resize_height,
+        })
+    }
+}
+
+// ======================
 // Renderable Builder
 // ======================
 
@@ -76,12 +145,19 @@ impl RenderableBuilder {
                         Err(e) => {
                             error!("Couldn't convert Text into TextRenderable: {:?}", e);
                             continue;
-                        },
-                        Ok(v) => out.push(Box::new(v))
+                        }
+                        Ok(v) => out.push(Box::new(v)),
                     }
                 }
                 Some(Content::Image(v)) => {
-                    println!("{:?}", v);
+                    let renderable = ImageRenderable::new_from_image(v);
+                    match renderable {
+                        Err(e) => {
+                            error!("Couldn't convert Image into Image Renderable: {:?}", e);
+                            continue;
+                        }
+                        Ok(v) => out.push(Box::new(v)),
+                    }
                 }
                 None => {
                     error!("Could not convert object: {:?} into renderable", object);
