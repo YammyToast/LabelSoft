@@ -5,7 +5,7 @@ mod test_renderables {
     use std::path::Path;
 
     use image::ImageReader;
-    use LabelSoft::renderables::ImageRenderable;
+    use LabelSoft::renderables::{ImageRenderable, RenderablePage};
     use LabelSoft::templategen::templates::template::{Image, Text};
     use LabelSoft::templategen::TemplateProject;
     use LabelSoft::{renderables::RenderableBuilder, templategen::templates::template::Template};
@@ -44,12 +44,19 @@ mod test_renderables {
         .unwrap();
         templateproject.add_image(image).unwrap();
 
+        let record_len = dataproject.records.len();
+
         let builder_res = RenderableBuilder::new_from_template_and_data(templateproject, dataproject);
         assert!(builder_res.is_ok());
         let builder = builder_res.unwrap();
-        for x in builder.into_iter() {
-            println!("{:?}", x);
-        }
+        
+        let pages_collected: Vec<RenderablePage> = builder.into_iter().collect();
+        println!("len {:?}", pages_collected.len());
+        println!("len records {:?}", record_len);
+        // assert that the number of items in is the number of items out,
+        // and thus that there are no errors during object transformation (template -> renderable).
+        assert_eq!(pages_collected.len(), record_len);
+
     }
 
     #[test]
