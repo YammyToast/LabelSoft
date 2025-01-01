@@ -6,8 +6,8 @@ use log::error;
 
 use crate::data::{DataProject, DataProjectSchema, DataRecord, DataRecordIndexed};
 use crate::templategen::templates::template::display_object::Content;
-use crate::templategen::templates::template::{DisplayObject, Image, Position, Text};
-use crate::templategen::TemplateProject;
+use crate::templategen::templates::template::{DisplayObject, Image, PageStyle, Position, Text};
+use crate::templategen::{PageStyleConfig, TemplateProject};
 
 // ======================
 // Text Renderable
@@ -78,15 +78,19 @@ impl ImageRenderable {
                 let decode_result = reader.decode();
                 let dyn_image = match decode_result {
                     Ok(v) => v,
-                    Err(e) => return Err(e.into())
+                    Err(e) => return Err(e.into()),
                 };
                 dyn_image
-            },
+            }
             _ => {
-                return Err(format!("ImageRenderable is not implemented for extension: {:?}", ext).into())
+                return Err(format!(
+                    "ImageRenderable is not implemented for extension: {:?}",
+                    ext
+                )
+                .into())
             }
         };
-        return Ok(data)
+        return Ok(data);
     }
 
     pub fn new_from_image(__image: Image) -> Result<Self, Box<dyn std::error::Error>> {
@@ -98,13 +102,17 @@ impl ImageRenderable {
         }
         let raw_img = match Self::handle_image_load(img_path) {
             Err(e) => return Err(format!("Couldn't load image data: {:?}", e).into()),
-            Ok(data) => data
+            Ok(data) => data,
         };
-        
+
         // resize the image per the user's input.
         let resize_width: u32 = __image.width.floor() as u32;
         let resize_height: u32 = __image.height.floor() as u32;
-        let resized = raw_img.resize(resize_width, resize_height, image::imageops::FilterType::Lanczos3);
+        let resized = raw_img.resize(
+            resize_width,
+            resize_height,
+            image::imageops::FilterType::Lanczos3,
+        );
 
         let position = __image.position.unwrap();
         Ok(ImageRenderable {
@@ -118,12 +126,31 @@ impl ImageRenderable {
 }
 
 // ======================
+// Renderable Page
+// ======================
+
+#[derive(Debug)]
+pub struct RenderablePage {
+    renderables: Vec<Box<dyn Any>>,
+    page_style: PageStyle,
+}
+
+impl RenderablePage {
+    pub fn new(__renderables: Vec<Box<dyn Any>>, __page_style: PageStyle) -> Self {
+        RenderablePage {
+            renderables: __renderables,
+            page_style: __page_style,
+        }
+    }
+}
+
+// ======================
 // Renderable Builder
 // ======================
 
 #[derive(Debug)]
 pub struct RenderableBuilder {
-    page_grouped_object_lists: Vec<Vec<Box<dyn Any>>>,
+    page_grouped_object_lists: Vec<RenderablePage>,
 }
 
 impl RenderableBuilder {
@@ -169,19 +196,37 @@ impl RenderableBuilder {
     pub fn new_from_template_and_data(
         __templateproject: TemplateProject,
         __data: DataProject,
-    ) -> Self {
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let schema = __data.schema.clone();
-        let mut page_grouped_object_lists: Vec<Vec<Box<dyn Any>>> = Vec::new();
+        let mut pages: Vec<RenderablePage> = Vec::new();
+        // Get default schema, THIS SHOULD BE CHANGED LATER!!!
+        let page_style = &__templateproject.template.page_styles.get("DEFAULT");
+        if page_style.is_none() {
+            return Err(
+                format!("Could not get default schema on provided template_project").into(),
+            );
+        }
         // iterate over each record. generated objects are grouped into separate arrays
         // which identify individual pages. one record = one page.
         for recordindexed in __data.into_iter() {
             let template_objects = __templateproject.template.root.clone();
             let generated_objects =
                 Self::convert_template_objects(template_objects, recordindexed, &schema);
-            page_grouped_object_lists.push(generated_objects);
+            let page_object = RenderablePage::new(generated_objects, page_style.unwrap().clone());
+            pages.push(page_object);
         }
-        RenderableBuilder {
-            page_grouped_object_lists: page_grouped_object_lists,
-        }
+        Ok(RenderableBuilder {
+            page_grouped_object_lists: pages,
+        })
+    }
+}
+
+impl IntoIterator for RenderableBuilder {
+    type Item = RenderablePage;
+
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        return self.page_grouped_object_lists.into_iter();
     }
 }

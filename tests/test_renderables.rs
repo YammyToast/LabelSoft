@@ -44,7 +44,12 @@ mod test_renderables {
         .unwrap();
         templateproject.add_image(image).unwrap();
 
-        let builder = RenderableBuilder::new_from_template_and_data(templateproject, dataproject);
+        let builder_res = RenderableBuilder::new_from_template_and_data(templateproject, dataproject);
+        assert!(builder_res.is_ok());
+        let builder = builder_res.unwrap();
+        for x in builder.into_iter() {
+            println!("{:?}", x);
+        }
     }
 
     #[test]
