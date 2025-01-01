@@ -9,7 +9,7 @@ use std::{env::args, fmt::Debug, io::Write, path::Path, process::exit};
 mod data;
 mod templategen;
 mod renderables;
-mod output;
+mod writers;
 // ======================
 // Launch Args
 // ======================

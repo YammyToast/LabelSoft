@@ -131,8 +131,8 @@ impl ImageRenderable {
 
 #[derive(Debug)]
 pub struct RenderablePage {
-    renderables: Vec<Box<dyn Any>>,
-    page_style: PageStyle,
+    pub renderables: Vec<Box<dyn Any>>,
+    pub page_style: PageStyle,
 }
 
 impl RenderablePage {
