@@ -30,10 +30,11 @@ pub fn generate_output_directories(__fp: &Path) -> Option<Box<dyn std::error::Er
 pub mod PDFGeneration {
     use std::{fs::File, io::BufWriter, path::Path};
 
-    use eframe::epaint::image;
     use ::image::{DynamicImage, GenericImageView};
+    use eframe::epaint::image;
     use printpdf::{
-        font, ImageXObject, IndirectFontRef, Mm, PdfDocument, PdfDocumentReference, PdfLayer, PdfLayerReference, PdfPageReference, Pt
+        font, ImageRotation, ImageTransform, ImageXObject, IndirectFontRef, Mm, PdfDocument,
+        PdfDocumentReference, PdfLayer, PdfLayerReference, PdfPageReference, Pt,
     };
 
     use crate::{
@@ -50,8 +51,11 @@ pub mod PDFGeneration {
     }
 
     impl PDFWriter {
-        fn correct_position(__position: &Position) -> (Mm, Mm) {
-            return (Pt(__position.x).into(), Pt(-__position.y).into());
+        fn correct_position(__position: &Position, __page_height: &f32) -> (Mm, Mm) {
+            return (
+                Pt(__position.x).into(),
+                Pt(__page_height - __position.y).into(),
+            );
         }
 
         fn dynamicimage2imagexobject(__image: &DynamicImage) -> ImageXObject {
@@ -63,9 +67,9 @@ pub mod PDFGeneration {
                     &img.pixels()
                         .flat_map(|p| p.0[0..3].to_vec()) // Take the first 3 bytes (R, G, B)
                         .collect::<Vec<u8>>()
-                },
-                _ => panic!("Unsupported image format! Convert the image to RGB or RGBA.")
-            };      
+                }
+                _ => panic!("Unsupported image format! Convert the image to RGB or RGBA."),
+            };
             let imagexobject = ImageXObject {
                 width: printpdf::Px(width as usize),
                 height: printpdf::Px(height as usize),
@@ -75,7 +79,7 @@ pub mod PDFGeneration {
                 image_data: rgb_data.clone(),
                 smask: None,
                 image_filter: None,
-                clipping_bbox: None
+                clipping_bbox: None,
             };
             return imagexobject;
         }
@@ -96,15 +100,17 @@ pub mod PDFGeneration {
         fn add_text(
             __layer: &PdfLayerReference,
             __text: &TextRenderable,
-            __font: &IndirectFontRef
+            __font: &IndirectFontRef,
+            __page_height_r: &f32,
         ) -> Result<(), Box<dyn std::error::Error>> {
-            let (x, y) = Self::correct_position(&__text.position);
+            let (x, y) = Self::correct_position(&__text.position, __page_height_r);
             let font_size_float = __text.font_size as f32;
-            let spacing_for_font_size: Mm = Pt(-font_size_float).into(); 
+            let spacing_for_font_size: Mm = Pt(-font_size_float).into();
             // position text cursor to required position
             __layer.set_text_cursor(x, y);
+            println!("{:?}, {:?}", x, y);
             // account for size of the text and the way printpdf handles the y-axis.
-            __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
+            // __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
             // setup parameters.
             __layer.set_line_height(font_size_float);
             __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
@@ -115,13 +121,33 @@ pub mod PDFGeneration {
                 __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
             }
 
-
             Ok(())
         }
 
-        fn add_image(__layer: &PdfLayerReference, __image: &ImageRenderable) {
+        fn add_image(
+            __layer: &PdfLayerReference,
+            __image: &ImageRenderable,
+            __page_height_r: &f32,
+        ) -> Result<(), Box<dyn std::error::Error>> {
+            // convert dynamicimage generic into intermediate ImageXObject type.
             let imagex = Self::dynamicimage2imagexobject(&__image.image_data);
-            // let image = printpdf::Image::from(__image.image_data);
+            // create a printpdf image from the ImageXObject intermediate.
+            let pdf_image = printpdf::Image::from(imagex);
+
+            let (x, y) = Self::correct_position(&__image.position, __page_height_r);
+            let transform = ImageTransform {
+                translate_x: Some(x),
+                translate_y: Some(y),
+                rotate: None,
+                scale_x: None,
+                scale_y: None,
+                dpi: None,
+            };
+            // add the image to the layer.
+            // have to clone here for some reason.
+            pdf_image.add_to_layer(__layer.clone(), transform);
+
+            Ok(())
         }
 
         fn generate_pdf(&self) -> Result<PdfDocumentReference, Box<dyn std::error::Error>> {
@@ -156,23 +182,41 @@ pub mod PDFGeneration {
                 // move the cursor to the top left (with margins)
                 // it initially starts bottom left.
                 current_layer.set_text_cursor(left_margin, page_height - top_margin);
+
                 // object level iteration.
                 for renderableobject in &renderablepage.renderables {
                     // as vec is of any type, cannot use match statement.
 
                     // RENDER TEXT
                     if let Some(object) = renderableobject.downcast_ref::<TextRenderable>() {
-                        let res = match Self::add_text(&current_layer, &object, &font) {
+                        // add text
+                        let res = match Self::add_text(
+                            &current_layer,
+                            &object,
+                            &font,
+                            &renderablepage.page_style.height,
+                        ) {
                             Ok(_) => {}
                             Err(e) => {
-                                println!("Error: {:?}", e);
+                                println!("Error adding text in PDFWriter: {:?}", e);
                                 continue;
                             }
                         };
                     // RENDER IMAGES
                     } else if let Some(object) = renderableobject.downcast_ref::<ImageRenderable>()
                     {
-                        let res = match Self::add_image()
+                        // add image
+                        let res = match Self::add_image(
+                            &current_layer,
+                            &object,
+                            &renderablepage.page_style.height,
+                        ) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                println!("Error adding image in PDFWriter: {:?}", e);
+                                continue;
+                            }
+                        };
                     }
                 }
             }

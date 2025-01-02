@@ -51,8 +51,6 @@ mod test_renderables {
         let builder = builder_res.unwrap();
         
         let pages_collected: Vec<RenderablePage> = builder.into_iter().collect();
-        println!("len {:?}", pages_collected.len());
-        println!("len records {:?}", record_len);
         // assert that the number of items in is the number of items out,
         // and thus that there are no errors during object transformation (template -> renderable).
         assert_eq!(pages_collected.len(), record_len);
