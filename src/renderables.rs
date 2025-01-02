@@ -14,7 +14,7 @@ use crate::templategen::{PageStyleConfig, TemplateProject};
 // ======================
 
 #[derive(Debug)]
-struct TextRenderable {
+pub struct TextRenderable {
     pub position: Position,
     pub lines: Vec<String>,
     pub max_width: f32,
@@ -56,6 +56,7 @@ impl TextRenderable {
 // Image Renderable
 // ======================
 
+#[derive(Debug)]
 pub struct ImageRenderable {
     pub position: Position,
     pub image_path: String,

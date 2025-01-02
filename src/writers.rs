@@ -30,9 +30,14 @@ pub fn generate_output_directories(__fp: &Path) -> Option<Box<dyn std::error::Er
 pub mod PDFGeneration {
     use std::{fs::File, io::BufWriter, path::Path};
 
-    use printpdf::{Mm, PdfDocument, PdfDocumentReference, Pt};
+    use printpdf::{
+        IndirectFontRef, Mm, PdfDocument, PdfDocumentReference, PdfLayer, PdfLayerReference, PdfPageReference, Pt
+    };
 
-    use crate::renderables::{RenderableBuilder, RenderablePage};
+    use crate::{
+        renderables::{ImageRenderable, RenderableBuilder, RenderablePage, TextRenderable},
+        templategen::templates::template::{PageStyle, Position},
+    };
 
     use super::{generate_output_directories, Writer};
 
@@ -43,6 +48,45 @@ pub mod PDFGeneration {
     }
 
     impl PDFWriter {
+        fn correct_position(__position: &Position) -> (Mm, Mm) {
+            return (Pt(__position.x).into(), Pt(-__position.y).into());
+        }
+
+        fn add_page(
+            __doc: &PdfDocumentReference,
+            __style: &PageStyle,
+        ) -> (PdfPageReference, PdfLayerReference) {
+            let page_width: Mm = Pt(__style.width).into();
+            let page_height: Mm = Pt(__style.height).into();
+
+            let page_indices = __doc.add_page(page_width, page_height, "main_layer");
+            let page = __doc.get_page(page_indices.0);
+            let layer = page.get_layer(page_indices.1);
+            return (page, layer);
+        }
+
+        fn add_text(
+            __layer: &PdfLayerReference,
+            __text: &TextRenderable,
+            __font: &IndirectFontRef
+        ) -> Result<(), Box<dyn std::error::Error>> {
+            let (x, y) = Self::correct_position(&__text.position);
+            __layer.set_text_cursor(x, y);
+            __layer.begin_text_section();
+            // setup parameters.
+            __layer.set_line_height(__text.font_size as f32);
+            __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
+            __layer.set_font(__font, __text.font_size as f32);
+            // write lines in the text object,
+            for line in &__text.lines {
+                __layer.write_text(line, __font);
+            }
+
+
+            __layer.end_text_section();
+            Ok(())
+        }
+
         fn generate_pdf(&self) -> Result<PdfDocumentReference, Box<dyn std::error::Error>> {
             // Printpdf requires that the document be initialized with the parameters for the first page,
             // height, width etc, and then returns pointers to the generated page and layer.
@@ -55,40 +99,46 @@ pub mod PDFGeneration {
                 ),
                 Some(v) => v,
             };
-            
             let page_width: Mm = Pt(init_page_get.page_style.width).into();
             let page_height: Mm = Pt(init_page_get.page_style.height).into();
 
-            let (doc, _page, _layer) = PdfDocument::new(
-                "output",
-                page_width,
-                page_height,
-                "main_layer",
-            );
-
+            let (doc, _page, _layer) =
+                PdfDocument::new("output", page_width, page_height, "main_layer");
             let font = doc
                 .add_external_font(File::open("fonts/ARIAL.TTF").unwrap())
                 .unwrap();
 
             let top_margin: Mm = Pt(init_page_get.page_style.margins[0]).into();
             let left_margin: Mm = Pt(init_page_get.page_style.margins[3]).into();
-            let layer = doc.get_page(_page).get_layer(_layer);
-            
-            layer.begin_text_section();
-            layer.set_text_cursor(left_margin, page_height - top_margin);
-            layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
-            layer.set_line_height(64.0);
-            layer.set_text_cursor(Mm(0.0), Pt(-64.0).into());
-            layer.set_font(&font, 64.0);
-            
-            layer.write_text("test", &font);
-            layer.write_text("test", &font);
-            layer.write_text("test", &font);
-            layer.write_text("test", &font);
-            layer.write_text("test", &font);
-            layer.end_text_section();
-            
-            Ok(doc)
+            // page level iteration.
+            for renderablepage in &self.__page_descriptors {
+                // initialize page with parameters.
+                let (current_page, current_layer) =
+                    Self::add_page(&doc, &renderablepage.page_style);
+                // initialize formatting parameters.
+                current_layer.set_text_cursor(left_margin, page_height - top_margin);
+                current_layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
+                // object level iteration.
+                for renderableobject in &renderablepage.renderables {
+                    // as vec is of any type, cannot use match statement.
+
+                    // RENDER TEXT
+                    if let Some(object) = renderableobject.downcast_ref::<TextRenderable>() {
+                        let res = match Self::add_text(&current_layer, &object, &font) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                println!("Error: {:?}", e);
+                                continue;
+                            }
+                        };
+                    // RENDER IMAGES
+                    } else if let Some(object) = renderableobject.downcast_ref::<ImageRenderable>()
+                    {
+                    }
+                }
+            }
+
+            return Ok(doc);
         }
     }
 
