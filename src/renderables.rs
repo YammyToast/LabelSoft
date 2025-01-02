@@ -114,6 +114,8 @@ impl ImageRenderable {
             resize_height,
             image::imageops::FilterType::Lanczos3,
         );
+        
+
 
         let position = __image.position.unwrap();
         Ok(ImageRenderable {

@@ -30,8 +30,10 @@ pub fn generate_output_directories(__fp: &Path) -> Option<Box<dyn std::error::Er
 pub mod PDFGeneration {
     use std::{fs::File, io::BufWriter, path::Path};
 
+    use eframe::epaint::image;
+    use ::image::{DynamicImage, GenericImageView};
     use printpdf::{
-        IndirectFontRef, Mm, PdfDocument, PdfDocumentReference, PdfLayer, PdfLayerReference, PdfPageReference, Pt
+        font, ImageXObject, IndirectFontRef, Mm, PdfDocument, PdfDocumentReference, PdfLayer, PdfLayerReference, PdfPageReference, Pt
     };
 
     use crate::{
@@ -50,6 +52,32 @@ pub mod PDFGeneration {
     impl PDFWriter {
         fn correct_position(__position: &Position) -> (Mm, Mm) {
             return (Pt(__position.x).into(), Pt(-__position.y).into());
+        }
+
+        fn dynamicimage2imagexobject(__image: &DynamicImage) -> ImageXObject {
+            let (width, height) = __image.dimensions();
+
+            let rgb_data = match __image {
+                DynamicImage::ImageRgb8(ref img) => img.as_raw(),
+                DynamicImage::ImageRgba8(ref img) => {
+                    &img.pixels()
+                        .flat_map(|p| p.0[0..3].to_vec()) // Take the first 3 bytes (R, G, B)
+                        .collect::<Vec<u8>>()
+                },
+                _ => panic!("Unsupported image format! Convert the image to RGB or RGBA.")
+            };      
+            let imagexobject = ImageXObject {
+                width: printpdf::Px(width as usize),
+                height: printpdf::Px(height as usize),
+                color_space: printpdf::ColorSpace::Rgb,
+                bits_per_component: printpdf::ColorBits::Bit8,
+                interpolate: true,
+                image_data: rgb_data.clone(),
+                smask: None,
+                image_filter: None,
+                clipping_bbox: None
+            };
+            return imagexobject;
         }
 
         fn add_page(
@@ -71,20 +99,29 @@ pub mod PDFGeneration {
             __font: &IndirectFontRef
         ) -> Result<(), Box<dyn std::error::Error>> {
             let (x, y) = Self::correct_position(&__text.position);
+            let font_size_float = __text.font_size as f32;
+            let spacing_for_font_size: Mm = Pt(-font_size_float).into(); 
+            // position text cursor to required position
             __layer.set_text_cursor(x, y);
-            __layer.begin_text_section();
+            // account for size of the text and the way printpdf handles the y-axis.
+            __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
             // setup parameters.
-            __layer.set_line_height(__text.font_size as f32);
+            __layer.set_line_height(font_size_float);
             __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
-            __layer.set_font(__font, __text.font_size as f32);
+            __layer.set_font(__font, font_size_float);
             // write lines in the text object,
             for line in &__text.lines {
                 __layer.write_text(line, __font);
+                __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
             }
 
 
-            __layer.end_text_section();
             Ok(())
+        }
+
+        fn add_image(__layer: &PdfLayerReference, __image: &ImageRenderable) {
+            let imagex = Self::dynamicimage2imagexobject(&__image.image_data);
+            // let image = printpdf::Image::from(__image.image_data);
         }
 
         fn generate_pdf(&self) -> Result<PdfDocumentReference, Box<dyn std::error::Error>> {
@@ -116,8 +153,9 @@ pub mod PDFGeneration {
                 let (current_page, current_layer) =
                     Self::add_page(&doc, &renderablepage.page_style);
                 // initialize formatting parameters.
+                // move the cursor to the top left (with margins)
+                // it initially starts bottom left.
                 current_layer.set_text_cursor(left_margin, page_height - top_margin);
-                current_layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
                 // object level iteration.
                 for renderableobject in &renderablepage.renderables {
                     // as vec is of any type, cannot use match statement.
@@ -134,6 +172,7 @@ pub mod PDFGeneration {
                     // RENDER IMAGES
                     } else if let Some(object) = renderableobject.downcast_ref::<ImageRenderable>()
                     {
+                        let res = match Self::add_image()
                     }
                 }
             }
