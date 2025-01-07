@@ -12,6 +12,9 @@ mod test_renderables {
 
     use super::util::{basic_dataproject, basic_page_style, basic_schema, basic_template};
 
+    /// Test that the renderable builder works with the expected inputs.
+    /// Encapsulates population with one of each type of template object; essentially enumeration.
+    /// Importantly, each template object added should be evaluate to be valid.
     #[test]
     fn test_renderablebuilder_init() {
         // build the test template
@@ -57,6 +60,12 @@ mod test_renderables {
 
     }
 
+
+    /// Test that the internal image resizing works.
+    /// The height and width of the Image Object do not have to match the source image size,
+    /// thus there is a procedure written to perform the transformation.
+    /// 
+    /// This test is for an exact 2x resize in both dimensions of a perfectly square image.
     #[test]
     fn test_image_resize_square() {
         let target_width: f32 = 64.0;

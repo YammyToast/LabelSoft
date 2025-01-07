@@ -11,6 +11,9 @@ mod test_writers {
 
     const OK_OUTPUT_PATH: &str = "tests/assets/tmp/ok";
 
+    /// Test that the standard PDF writer processess successfully.
+    /// NOTE that this does not encompass the logic error of output not looking as expected.
+    /// The output PDF is generated at tests/assets/tmp/ok.pdf for manual inspection.
     #[test]
     fn test_pdf_writer_ok() {
         // setup path

@@ -11,7 +11,7 @@ pub mod test_template {
 
     use super::util::{basic_dataproject, basic_page_style, basic_schema, basic_template};
 
-
+    /// Test expected inputs for a template initialization.
     #[test]
     fn test_init_template() {
         let default_name = "DEFAULT".to_string();
@@ -29,6 +29,7 @@ pub mod test_template {
         assert!(template.page_styles.get(&default_name).is_some());
     }
 
+    /// Test expected inputs for a page style config.
     #[test]
     fn test_page_style_config() {
         // test standard input
@@ -51,6 +52,7 @@ pub mod test_template {
         assert!(config_height_zero.is_err());
     }
 
+    // Test Generic Template Project helper merging factory.
     #[test]
     fn test_create_templateproject() {
         let style = basic_page_style(&"DEFAULT".to_string());
@@ -61,6 +63,7 @@ pub mod test_template {
         assert_eq!(template_project.template.root.len(), 0);
     }
 
+    // Test adding displayobjects to the merger factory.
     #[test]
     fn test_add_display_objects() {
         let init_page_style =
@@ -122,6 +125,7 @@ pub mod test_template {
         assert!(templateproject.add_text(text_invalid_column_name).is_err());
     }
 
+    // Test that adding an invalid image (path) is rejected by the factory.
     #[test]
     fn test_add_image_invalid() {
         let style = basic_page_style(&"DEFAULT".to_string());
