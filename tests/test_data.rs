@@ -1,10 +1,13 @@
+mod util;
+
 #[cfg(test)]
-mod test_csv {
-    use std::{any::{type_name, Any}, collections::HashMap, hash::Hash, path::Path};
-
+pub mod test_csv {
+    use std::{any::Any, collections::HashMap, path::Path};
     use LabelSoft::data::{DataProject, DataProjectSchema};
-    const FP_GOOD: &str = "tests/assets/good.csv";
 
+    use super::util::{basic_dataproject, basic_page_style, basic_schema, basic_template, FP_GOOD};
+
+    /// Test that the first line of a CSV is read to determine the file's headers.
     #[test]
     fn test_headers_csv() {
         let fp = Path::new(FP_GOOD);
@@ -64,6 +67,7 @@ mod test_csv {
         assert!(schema_chars.is_ok());
     }
 
+    /// Test converting string column names into exact numerical indexes.
     #[test]
     fn test_data_indexing() {
         let mut project = DataProject::new_infer_schema(FP_GOOD).unwrap();
@@ -79,7 +83,7 @@ mod test_csv {
         let first = schema.cols.iter().next().unwrap();
         let test_index = schema.get_index(first.0);
         assert!(test_index.is_some());
-        assert_eq!(test_index.unwrap(), first.1);       
+        assert_eq!(test_index.unwrap(), first.1);
         // ==== test record indexing
         // good index
         let element_good = &rec[first.0];
@@ -87,6 +91,7 @@ mod test_csv {
         assert_eq!(element_good.type_id(), String::new().type_id());
     }
 
+    // Test that an invalid column name properly fails.
     #[test]
     #[should_panic]
     fn test_data_index_invalid() {
@@ -97,11 +102,12 @@ mod test_csv {
         let _ = record["INVALID_KEY"];
     }
 
+    // Test that the whole data pipeline works correctly for expected inputs.
     #[test]
     fn test_dataproject_good() {
         let data_project: Option<DataProject> = DataProject::new_infer_schema(FP_GOOD);
         assert!(!data_project.is_none());
-        let dp = data_project.unwrap();
+        let mut dp = data_project.unwrap();
         let expected_schema: HashMap<String, usize> = [
             ("order_id", 0),
             ("customer_id", 1),
@@ -119,5 +125,9 @@ mod test_csv {
         .collect();
 
         assert_eq!(dp.schema.cols, expected_schema);
+        
+        let load_res = dp.load();
+        assert!(load_res.is_ok());
+
     }
 }
