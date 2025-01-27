@@ -61,7 +61,12 @@ pub mod PDFGeneration {
             return (__position.x, -__position.y);
         }
 
-        fn clean_cursor(__cursor_tracker: &mut CursorInstance, __layer: &PdfLayerReference) {}
+        fn clean_cursor(__cursor_tracker: &mut CursorInstance, __layer: &PdfLayerReference) {
+            // find difference needed to move to 0.
+            let change_x: Mm = Pt(-__cursor_tracker.cursor_x).into();
+            let change_y: Mm = Pt(-__cursor_tracker.cursor_y).into();
+            __layer.set_text_cursor(change_x, change_y);
+        }
 
         fn move_cursor(
             __cursor_tracker: &mut CursorInstance,
@@ -80,10 +85,10 @@ pub mod PDFGeneration {
             // which for the cursor is (20, -20)
             // x -> +10
             // y -> -10
-            let physical_x: Mm = Pt(x - __cursor_tracker.cursor_x).into();
-            let physical_y: Mm = Pt(y - __cursor_tracker.cursor_y).into();
+            let change_x: Mm = Pt(x - __cursor_tracker.cursor_x).into();
+            let change_y: Mm = Pt(y - __cursor_tracker.cursor_y).into();
             // Actually move the cursor in the layer.
-            __layer.set_text_cursor(physical_x, physical_y);
+            __layer.set_text_cursor(change_x, change_y);
             // Assign new cursor coordinates.
             __cursor_tracker.cursor_x = x;
             __cursor_tracker.cursor_y = y;
@@ -179,8 +184,8 @@ pub mod PDFGeneration {
 
             let (x, y) = Self::correct_position(&__image.position, __page_height_r);
             let transform = ImageTransform {
-                translate_x: Some(x),
-                translate_y: Some(y),
+                translate_x: Some(Mm(x)),
+                translate_y: Some(Mm(y)),
                 rotate: None,
                 scale_x: None,
                 scale_y: None,
