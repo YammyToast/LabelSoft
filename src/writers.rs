@@ -48,15 +48,32 @@ pub mod PDFGeneration {
     pub struct PDFWriter {
         __file_path: String,
         __page_descriptors: Vec<RenderablePage>,
+        __cursor_x: Mm,
+        __cursor_y: Mm
     }
 
     impl PDFWriter {
         fn correct_position(__position: &Position, __page_height: &f32) -> (Mm, Mm) {
             return (
                 Pt(__position.x).into(),
-                Pt(__page_height - __position.y).into(),
+                Pt(-__position.y).into(),
             );
         }
+
+        fn clean_cursor(__layer: &PdfLayerReference) {
+
+        }
+
+        fn move_cursor(&self, __position: &Position, __layer: &PdfLayerReference, __page_height: &f32) {
+            // Calculate x and y in the printpdf system. Primarily this is making the y negative.
+            let (x, y) = Self::correct_position(__position, __page_height);
+            // Actually move the cursor in the layer.
+            __layer.set_text_cursor(x, y);
+            // Track the changes made in our wrapper.
+
+        }
+
+
 
         fn dynamicimage2imagexobject(__image: &DynamicImage) -> ImageXObject {
             let (width, height) = __image.dimensions();
@@ -98,19 +115,28 @@ pub mod PDFGeneration {
         }
 
         fn add_text(
+            &self,
             __layer: &PdfLayerReference,
             __text: &TextRenderable,
             __font: &IndirectFontRef,
             __page_height_r: &f32,
         ) -> Result<(), Box<dyn std::error::Error>> {
-            let (x, y) = Self::correct_position(&__text.position, __page_height_r);
+            // let (x, y) = Self::correct_position(&__text.position, __page_height_r);
             let font_size_float = __text.font_size as f32;
             let spacing_for_font_size: Mm = Pt(-font_size_float).into();
+            
+            // clean the cursor
+
+            // move to the required position
+            self.move_cursor(&__text.position, __layer, __page_height_r);
+
             // position text cursor to required position
-            __layer.set_text_cursor(x, y);
-            println!("{:?}, {:?}", x, y);
+            // __layer.set_text_cursor(x, y);
+            
             // account for size of the text and the way printpdf handles the y-axis.
             // __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
+            
+            
             // setup parameters.
             __layer.set_line_height(font_size_float);
             __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
@@ -125,6 +151,7 @@ pub mod PDFGeneration {
         }
 
         fn add_image(
+            &self,
             __layer: &PdfLayerReference,
             __image: &ImageRenderable,
             __page_height_r: &f32,
@@ -190,7 +217,7 @@ pub mod PDFGeneration {
                     // RENDER TEXT
                     if let Some(object) = renderableobject.downcast_ref::<TextRenderable>() {
                         // add text
-                        let res = match Self::add_text(
+                        let res = match self.add_text(
                             &current_layer,
                             &object,
                             &font,
@@ -206,7 +233,7 @@ pub mod PDFGeneration {
                     } else if let Some(object) = renderableobject.downcast_ref::<ImageRenderable>()
                     {
                         // add image
-                        let res = match Self::add_image(
+                        let res = match self.add_image(
                             &current_layer,
                             &object,
                             &renderablepage.page_style.height,
@@ -230,6 +257,8 @@ pub mod PDFGeneration {
             PDFWriter {
                 __file_path: __file_path.to_string(),
                 __page_descriptors: Vec::new(),
+                __cursor_x: Mm(0.0),
+                __cursor_y: Mm(0.0)
             }
         }
 

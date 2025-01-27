@@ -23,6 +23,7 @@ mod test_writers {
         
         
         let mut writer = PDFWriter::new(output_path);
+        // get basic renderable.
         let builder = basic_populated_renderablebuilder();
         writer.add_builder_pages(builder).unwrap();
 
