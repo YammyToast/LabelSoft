@@ -50,6 +50,7 @@ pub mod PDFGeneration {
         __page_descriptors: Vec<RenderablePage>,
     }
 
+    #[derive(Debug)]
     struct CursorInstance {
         cursor_x: f32,
         cursor_y: f32,
@@ -90,8 +91,8 @@ pub mod PDFGeneration {
             // Actually move the cursor in the layer.
             __layer.set_text_cursor(change_x, change_y);
             // Assign new cursor coordinates.
-            __cursor_tracker.cursor_x = x;
-            __cursor_tracker.cursor_y = y;
+            __cursor_tracker.cursor_x += change_x.0;
+            __cursor_tracker.cursor_y += change_y.0;
         }
 
         fn dynamicimage2imagexobject(__image: &DynamicImage) -> ImageXObject {
@@ -140,9 +141,8 @@ pub mod PDFGeneration {
             __page_height_r: &f32,
         ) -> Result<(), Box<dyn std::error::Error>> {
             let font_size_float = __text.font_size as f32;
-            let spacing_for_font_size: Mm = Pt(-font_size_float).into();
+            let spacing_for_font_size: f32 = font_size_float;
 
-            // let (x, y) = Self::correct_position(&__text.position, __page_height_r);
             // Initialize the tracking cursor instance.
             let mut cursor_instance = CursorInstance {
                 cursor_x: 0.0,
@@ -150,24 +150,26 @@ pub mod PDFGeneration {
                 page_height: *__page_height_r,
             };
 
+            // calculate starting position
+            // add the font-size onto the starting position, again a printpdf thing
+            let root_pos = Position {
+                x: __text.position.x,
+                y: (__text.position.y + spacing_for_font_size),
+            };
             // move to the required position
-            Self::move_cursor(&mut cursor_instance, &__text.position, __layer);
+            Self::move_cursor(&mut cursor_instance, &root_pos, __layer);
 
-            // position text cursor to required position
-            // __layer.set_text_cursor(x, y);
-
-            // account for size of the text and the way printpdf handles the y-axis.
-            // __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
-
-            // // setup parameters.
-            // __layer.set_line_height(font_size_float);
-            // __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
-            // __layer.set_font(__font, font_size_float);
-            // // write lines in the text object,
-            // for line in &__text.lines {
-            //     __layer.write_text(line, __font);
-            //     __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
-            // }
+            // setup parameters.
+            __layer.set_line_height(font_size_float);
+            __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
+            __layer.set_font(__font, font_size_float);
+            // write lines in the text object,
+            for line in &__text.lines {
+                __layer.write_text(line, __font);
+                let next_line_pos: Position = Position { x: 0.0, y: spacing_for_font_size };
+                // __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
+                Self::move_cursor(&mut cursor_instance, &next_line_pos, __layer);
+            }
 
             Ok(())
         }
