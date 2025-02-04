@@ -82,14 +82,6 @@ pub mod PDFGeneration {
             // find difference needed to move to 0.
             let change_x: Mm = Pt(0.0 - __cursor_tracker.cursor_x).into();
             let change_y: Mm = Pt(0.0 - __cursor_tracker.cursor_y).into();
-            // println!("Cleaning | X:{}, Y:{}", change_x.0, change_y.0);
-            println!(
-                "{:?} to zero: {:?} | {:?} to zero: {:?}",
-                __cursor_tracker.cursor_x,
-                0.0 - __cursor_tracker.cursor_x,
-                __cursor_tracker.cursor_y,
-                0.0 - __cursor_tracker.cursor_y
-            );
             __layer.set_text_cursor(change_x, change_y);
         }
 

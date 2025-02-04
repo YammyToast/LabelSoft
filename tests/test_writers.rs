@@ -4,6 +4,8 @@ mod util;
 mod test_writers {
     use std::{fmt::write, path::Path};
 
+    use crate::util::overlap_text_populated_renderablebuilder;
+
     use super::util::{basic_populated_renderablebuilder, two_text_populated_renderablebuilder};
 
     use eframe::egui::output;
@@ -11,7 +13,7 @@ mod test_writers {
 
     const OK_OUTPUT_PATH: &str = "tests/assets/tmp/ok";
     const TWO_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/twotext";
-
+    const OVERLAP_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/overlap";
 
     // ======================
     // PDF GENERATION
@@ -47,6 +49,20 @@ mod test_writers {
         let mut writer = PDFWriter::new(output_path);
         // get two text renderable builder.
         let builder = two_text_populated_renderablebuilder();
+        writer.add_builder_pages(builder).unwrap();
+
+        let write_res = writer.write();
+        assert!(write_res.is_ok());
+    }
+
+    #[test]
+    fn test_pdf_overlap_text_generation() {
+        let fp = Path::new(OVERLAP_TEXT_OUTPUT_PATH);
+        let buf = fp.with_extension("pdf");
+        let output_path: &str = buf.to_str().unwrap();
+
+        let mut writer = PDFWriter::new(output_path);
+        let builder = overlap_text_populated_renderablebuilder();
         writer.add_builder_pages(builder).unwrap();
 
         let write_res = writer.write();

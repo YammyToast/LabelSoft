@@ -56,7 +56,7 @@ pub fn basic_template_text() -> Text {
 pub fn address_template_text() -> Text {
     let address_text = Text::new(
         1.0,
-        1.0,
+        12.0,
         200.0,
         100.0,
         "shipping_address".to_string(),
