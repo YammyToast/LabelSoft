@@ -2,7 +2,9 @@ use LabelSoft::{data::{DataProject, DataProjectSchema}, renderables::RenderableB
 
 pub const FP_GOOD: &str = "tests/assets/good.csv";
 
-
+// ======================
+// BUNDLING OBJECTS
+// ======================
 
 pub fn basic_page_style(__default_name: &String) -> PageStyleConfig {
     PageStyleConfig::new(__default_name.clone(), 1280.0, 720.0, [1.0, 1.0, 1.0, 1.0]).unwrap()
@@ -39,6 +41,10 @@ pub fn basic_templateproject() -> (TemplateProject, DataProject) {
     let templateproject = TemplateProject::new(template, data.schema.clone());
     return (templateproject, data);
 }
+
+// ======================
+// PRIMITIVE RENDERING OBJECTS
+// ======================
 
 pub fn basic_template_text() -> Text {
     let text = Text::new(
@@ -78,6 +84,21 @@ pub fn basic_template_image() -> Image {
     .unwrap();
     return image;
 }
+
+pub fn root_image() -> Image {
+    let image = Image::new(
+        0.0,
+        0.0,
+        128.0,
+        128.0,
+        "tests/assets/examplebox.png".to_string()
+    ).unwrap();
+    return image;
+}
+
+// ======================
+// SPECIFIC COMPOUND INSTANCES
+// ======================
 
 pub fn basic_populated_renderablebuilder() -> RenderableBuilder {
     let init = basic_templateproject();
@@ -121,6 +142,17 @@ pub fn overlap_text_populated_renderablebuilder() -> RenderableBuilder {
 
     templateproject.add_text(basic_template_text()).unwrap();
     templateproject.add_text(overlap_text).unwrap();
+
+    let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+    return builder;
+}
+
+pub fn diagonal_image_populated_renderablebuilder() -> RenderableBuilder {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+
+    templateproject.add_image(root_image()).unwrap();
 
     let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
     return builder;
