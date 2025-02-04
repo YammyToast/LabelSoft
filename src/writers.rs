@@ -56,10 +56,10 @@ pub mod PDFGeneration {
 
     /// ### Cursor Instance Struct
     /// Groups cursor tracking variables needed to implement a wrapper for PrintPDF.
-    /// 
+    ///
     /// As PrintPDF implements a non-episodic cursor, i.e., positions are relative to the last given position,
-    /// an episodic wrapper is made. 
-    /// 
+    /// an episodic wrapper is made.
+    ///
     /// Note that this struct has no implementation. It is utilized by various static methods on the PDFWriter class
     /// like add_text and add_image.
     #[derive(Debug)]
@@ -80,18 +80,25 @@ pub mod PDFGeneration {
         /// Moves the cursor back to the initial episode point, closing the episode.
         fn clean_cursor(__cursor_tracker: &mut CursorInstance, __layer: &PdfLayerReference) {
             // find difference needed to move to 0.
-            let change_x: Mm = Pt(-__cursor_tracker.cursor_x).into();
-            let change_y: Mm = Pt(-__cursor_tracker.cursor_y).into();
-            println!("Moving cursor : {:?}, {:?}", change_x.0, change_y.0);
+            let change_x: Mm = Pt(0.0 - __cursor_tracker.cursor_x).into();
+            let change_y: Mm = Pt(0.0 - __cursor_tracker.cursor_y).into();
+            // println!("Cleaning | X:{}, Y:{}", change_x.0, change_y.0);
+            println!(
+                "{:?} to zero: {:?} | {:?} to zero: {:?}",
+                __cursor_tracker.cursor_x,
+                0.0 - __cursor_tracker.cursor_x,
+                __cursor_tracker.cursor_y,
+                0.0 - __cursor_tracker.cursor_y
+            );
             __layer.set_text_cursor(change_x, change_y);
         }
-        
+
         /// ### Move Cursor
         /// Move's the cursor to the provided coordinates.
-        /// 
+        ///
         /// ! This function is non-episodic, and coordinates should be given as such.
         /// See CursorInstance for further implementation reasoning.
-        /// 
+        ///
         /// ! Note that the coordinates should be generic, not in the inverted PrintPDF method.
         fn move_cursor(
             __cursor_tracker: &mut CursorInstance,
@@ -111,18 +118,18 @@ pub mod PDFGeneration {
             // x -> +10
             // y -> -10
             let change_x = x - __cursor_tracker.cursor_x;
-            let change_y = y - __cursor_tracker.cursor_y;
+            // not sure why this is correct
+            let change_y = y + __cursor_tracker.cursor_y;
 
-            let mm_x: Mm = Pt(x).into();
-            let mm_y: Mm = Pt(y).into();
+            let mm_x: Mm = Pt(change_x).into();
+            let mm_y: Mm = Pt(change_y).into();
 
             // Actually move the cursor in the layer.
             __layer.set_text_cursor(mm_x, mm_y);
             // Assign new cursor coordinates.
-            println!("Before {:?}, {:?}", __cursor_tracker.cursor_x, __cursor_tracker.cursor_y);
             __cursor_tracker.cursor_x += change_x;
             __cursor_tracker.cursor_y += change_y;
-            println!("After {:?}, {:?}", __cursor_tracker.cursor_x, __cursor_tracker.cursor_y);
+            // println!("Provided: {:?}, Change: {:?}, After: {:?}", __position.x, change_x, __cursor_tracker.cursor_x);
         }
 
         fn dynamicimage2imagexobject(__image: &DynamicImage) -> ImageXObject {
@@ -190,19 +197,21 @@ pub mod PDFGeneration {
             Self::move_cursor(&mut cursor_instance, &root_pos, __layer);
 
             // setup parameters.
-            // __layer.set_line_height(font_size_float);
             __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
             __layer.set_font(__font, font_size_float);
+
             // write lines in the text object,
             for line in &__text.lines {
-                let next_line_pos: Position = Position { x: 0.0, y: spacing_for_font_size };
+                let next_line_pos: Position = Position {
+                    x: __text.position.x,
+                    y: cursor_instance.cursor_y + spacing_for_font_size,
+                };
                 Self::move_cursor(&mut cursor_instance, &next_line_pos, __layer);
                 __layer.write_text(line, __font);
             }
 
             // clean the cursor after everything.
             Self::clean_cursor(&mut cursor_instance, __layer);
-            
 
             Ok(())
         }

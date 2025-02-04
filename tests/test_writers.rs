@@ -4,9 +4,7 @@ mod util;
 mod test_writers {
     use std::{fmt::write, path::Path};
 
-    use crate::util::two_text_populated_renderablebuilder;
-
-    use super::util::{basic_populated_renderablebuilder};
+    use super::util::{basic_populated_renderablebuilder, two_text_populated_renderablebuilder};
 
     use eframe::egui::output;
     use LabelSoft::writers::{PDFGeneration::PDFWriter, Writer};    

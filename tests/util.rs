@@ -56,7 +56,7 @@ pub fn basic_template_text() -> Text {
 pub fn address_template_text() -> Text {
     let address_text = Text::new(
         1.0,
-        0.0,
+        1.0,
         200.0,
         100.0,
         "shipping_address".to_string(),
@@ -96,8 +96,31 @@ pub fn two_text_populated_renderablebuilder() -> RenderableBuilder {
     let mut templateproject = init.0;
     let data = init.1;
 
+
     templateproject.add_text(basic_template_text()).unwrap();
     templateproject.add_text(address_template_text()).unwrap();
+
+    let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+    return builder;
+}
+
+pub fn overlap_text_populated_renderablebuilder() -> RenderableBuilder {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+
+    let overlap_text = Text::new(
+        1.0,
+        1.0,
+        200.0,
+        100.0,
+        "shipping_address".to_string(),
+        12,
+        "test_font".to_string()
+    ).unwrap();
+
+    templateproject.add_text(basic_template_text()).unwrap();
+    templateproject.add_text(overlap_text).unwrap();
 
     let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
     return builder;
