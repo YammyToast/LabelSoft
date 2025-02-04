@@ -50,12 +50,78 @@ pub mod PDFGeneration {
         __page_descriptors: Vec<RenderablePage>,
     }
 
+    // ======================
+    // SPACE FORMATTING
+    // ======================
+
+    /// ### Cursor Instance Struct
+    /// Groups cursor tracking variables needed to implement a wrapper for PrintPDF.
+    ///
+    /// As PrintPDF implements a non-episodic cursor, i.e., positions are relative to the last given position,
+    /// an episodic wrapper is made.
+    ///
+    /// Note that this struct has no implementation. It is utilized by various static methods on the PDFWriter class
+    /// like add_text and add_image.
+    #[derive(Debug)]
+    struct CursorInstance {
+        cursor_x: f32,
+        cursor_y: f32,
+        page_height: f32,
+    }
+
     impl PDFWriter {
-        fn correct_position(__position: &Position, __page_height: &f32) -> (Mm, Mm) {
-            return (
-                Pt(__position.x).into(),
-                Pt(__page_height - __position.y).into(),
-            );
+        // ### Correct Position
+        // Encapsulated logic to convert generic coordinates into the PrintPDF coordinate system.
+        fn correct_position(__position: &Position, __page_height: &f32) -> (f32, f32) {
+            return (__position.x, -__position.y);
+        }
+
+        /// ### Clean Cursor
+        /// Moves the cursor back to the initial episode point, closing the episode.
+        fn clean_cursor(__cursor_tracker: &mut CursorInstance, __layer: &PdfLayerReference) {
+            // find difference needed to move to 0.
+            let change_x: Mm = Pt(0.0 - __cursor_tracker.cursor_x).into();
+            let change_y: Mm = Pt(0.0 - __cursor_tracker.cursor_y).into();
+            __layer.set_text_cursor(change_x, change_y);
+        }
+
+        /// ### Move Cursor
+        /// Move's the cursor to the provided coordinates.
+        ///
+        /// ! This function is non-episodic, and coordinates should be given as such.
+        /// See CursorInstance for further implementation reasoning.
+        ///
+        /// ! Note that the coordinates should be generic, not in the inverted PrintPDF method.
+        fn move_cursor(
+            __cursor_tracker: &mut CursorInstance,
+            __position: &Position,
+            __layer: &PdfLayerReference,
+        ) {
+            // Calculate x and y in the printpdf system. Primarily this is making the y negative.
+            let (x, y) = Self::correct_position(__position, &__cursor_tracker.page_height);
+            // Now calculate the actual position to move to given the current position.
+            // x -> difference positive.
+            // y -> difference negative.
+            // currently at (10, 10)
+            // cursor says (10, -10)
+            // ==
+            // want to move to (20, 20)
+            // which for the cursor is (20, -20)
+            // x -> +10
+            // y -> -10
+            let change_x = x - __cursor_tracker.cursor_x;
+            // not sure why this is correct
+            let change_y = y + __cursor_tracker.cursor_y;
+
+            let mm_x: Mm = Pt(change_x).into();
+            let mm_y: Mm = Pt(change_y).into();
+
+            // Actually move the cursor in the layer.
+            __layer.set_text_cursor(mm_x, mm_y);
+            // Assign new cursor coordinates.
+            __cursor_tracker.cursor_x += change_x;
+            __cursor_tracker.cursor_y += change_y;
+            // println!("Provided: {:?}, Change: {:?}, After: {:?}", __position.x, change_x, __cursor_tracker.cursor_x);
         }
 
         fn dynamicimage2imagexobject(__image: &DynamicImage) -> ImageXObject {
@@ -103,23 +169,41 @@ pub mod PDFGeneration {
             __font: &IndirectFontRef,
             __page_height_r: &f32,
         ) -> Result<(), Box<dyn std::error::Error>> {
-            let (x, y) = Self::correct_position(&__text.position, __page_height_r);
             let font_size_float = __text.font_size as f32;
-            let spacing_for_font_size: Mm = Pt(-font_size_float).into();
-            // position text cursor to required position
-            __layer.set_text_cursor(x, y);
-            println!("{:?}, {:?}", x, y);
-            // account for size of the text and the way printpdf handles the y-axis.
-            // __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
+            let spacing_for_font_size: f32 = font_size_float;
+
+            // Initialize the tracking cursor instance.
+            // The cursor is episodic so we're always working from 0,0.
+            let mut cursor_instance = CursorInstance {
+                cursor_x: 0.0,
+                cursor_y: 0.0,
+                page_height: *__page_height_r,
+            };
+
+            // set the starting position, aka. the difference from 0.0
+            let root_pos = Position {
+                x: __text.position.x,
+                y: __text.position.y,
+            };
+            // move to the required position
+            Self::move_cursor(&mut cursor_instance, &root_pos, __layer);
+
             // setup parameters.
-            __layer.set_line_height(font_size_float);
             __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
             __layer.set_font(__font, font_size_float);
+
             // write lines in the text object,
             for line in &__text.lines {
+                let next_line_pos: Position = Position {
+                    x: __text.position.x,
+                    y: cursor_instance.cursor_y + spacing_for_font_size,
+                };
+                Self::move_cursor(&mut cursor_instance, &next_line_pos, __layer);
                 __layer.write_text(line, __font);
-                __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
             }
+
+            // clean the cursor after everything.
+            Self::clean_cursor(&mut cursor_instance, __layer);
 
             Ok(())
         }
@@ -136,8 +220,8 @@ pub mod PDFGeneration {
 
             let (x, y) = Self::correct_position(&__image.position, __page_height_r);
             let transform = ImageTransform {
-                translate_x: Some(x),
-                translate_y: Some(y),
+                translate_x: Some(Mm(x)),
+                translate_y: Some(Mm(y)),
                 rotate: None,
                 scale_x: None,
                 scale_y: None,
