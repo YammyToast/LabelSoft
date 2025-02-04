@@ -53,6 +53,20 @@ pub fn basic_template_text() -> Text {
     return text;
 }
 
+pub fn address_template_text() -> Text {
+    let address_text = Text::new(
+        1.0,
+        0.0,
+        200.0,
+        100.0,
+        "shipping_address".to_string(),
+        12,
+        "test_font".to_string()
+    ).unwrap();
+    return address_text;
+}
+
+
 pub fn basic_template_image() -> Image {
     let image = Image::new(
         1.0,
@@ -72,6 +86,18 @@ pub fn basic_populated_renderablebuilder() -> RenderableBuilder {
 
     templateproject.add_text(basic_template_text()).unwrap();
     templateproject.add_image(basic_template_image()).unwrap();
+
+    let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+    return builder;
+}
+
+pub fn two_text_populated_renderablebuilder() -> RenderableBuilder {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+
+    templateproject.add_text(basic_template_text()).unwrap();
+    templateproject.add_text(address_template_text()).unwrap();
 
     let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
     return builder;

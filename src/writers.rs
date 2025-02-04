@@ -50,6 +50,18 @@ pub mod PDFGeneration {
         __page_descriptors: Vec<RenderablePage>,
     }
 
+    // ======================
+    // SPACE FORMATTING
+    // ======================
+
+    /// ### Cursor Instance Struct
+    /// Groups cursor tracking variables needed to implement a wrapper for PrintPDF.
+    /// 
+    /// As PrintPDF implements a non-episodic cursor, i.e., positions are relative to the last given position,
+    /// an episodic wrapper is made. 
+    /// 
+    /// Note that this struct has no implementation. It is utilized by various static methods on the PDFWriter class
+    /// like add_text and add_image.
     #[derive(Debug)]
     struct CursorInstance {
         cursor_x: f32,
@@ -58,17 +70,29 @@ pub mod PDFGeneration {
     }
 
     impl PDFWriter {
+        // ### Correct Position
+        // Encapsulated logic to convert generic coordinates into the PrintPDF coordinate system.
         fn correct_position(__position: &Position, __page_height: &f32) -> (f32, f32) {
             return (__position.x, -__position.y);
         }
 
+        /// ### Clean Cursor
+        /// Moves the cursor back to the initial episode point, closing the episode.
         fn clean_cursor(__cursor_tracker: &mut CursorInstance, __layer: &PdfLayerReference) {
             // find difference needed to move to 0.
             let change_x: Mm = Pt(-__cursor_tracker.cursor_x).into();
             let change_y: Mm = Pt(-__cursor_tracker.cursor_y).into();
+            println!("Moving cursor : {:?}, {:?}", change_x.0, change_y.0);
             __layer.set_text_cursor(change_x, change_y);
         }
-
+        
+        /// ### Move Cursor
+        /// Move's the cursor to the provided coordinates.
+        /// 
+        /// ! This function is non-episodic, and coordinates should be given as such.
+        /// See CursorInstance for further implementation reasoning.
+        /// 
+        /// ! Note that the coordinates should be generic, not in the inverted PrintPDF method.
         fn move_cursor(
             __cursor_tracker: &mut CursorInstance,
             __position: &Position,
@@ -86,13 +110,19 @@ pub mod PDFGeneration {
             // which for the cursor is (20, -20)
             // x -> +10
             // y -> -10
-            let change_x: Mm = Pt(x - __cursor_tracker.cursor_x).into();
-            let change_y: Mm = Pt(y - __cursor_tracker.cursor_y).into();
+            let change_x = x - __cursor_tracker.cursor_x;
+            let change_y = y - __cursor_tracker.cursor_y;
+
+            let mm_x: Mm = Pt(x).into();
+            let mm_y: Mm = Pt(y).into();
+
             // Actually move the cursor in the layer.
-            __layer.set_text_cursor(change_x, change_y);
+            __layer.set_text_cursor(mm_x, mm_y);
             // Assign new cursor coordinates.
-            __cursor_tracker.cursor_x += change_x.0;
-            __cursor_tracker.cursor_y += change_y.0;
+            println!("Before {:?}, {:?}", __cursor_tracker.cursor_x, __cursor_tracker.cursor_y);
+            __cursor_tracker.cursor_x += change_x;
+            __cursor_tracker.cursor_y += change_y;
+            println!("After {:?}, {:?}", __cursor_tracker.cursor_x, __cursor_tracker.cursor_y);
         }
 
         fn dynamicimage2imagexobject(__image: &DynamicImage) -> ImageXObject {
@@ -144,32 +174,35 @@ pub mod PDFGeneration {
             let spacing_for_font_size: f32 = font_size_float;
 
             // Initialize the tracking cursor instance.
+            // The cursor is episodic so we're always working from 0,0.
             let mut cursor_instance = CursorInstance {
                 cursor_x: 0.0,
                 cursor_y: 0.0,
                 page_height: *__page_height_r,
             };
 
-            // calculate starting position
-            // add the font-size onto the starting position, again a printpdf thing
+            // set the starting position, aka. the difference from 0.0
             let root_pos = Position {
                 x: __text.position.x,
-                y: (__text.position.y + spacing_for_font_size),
+                y: __text.position.y,
             };
             // move to the required position
             Self::move_cursor(&mut cursor_instance, &root_pos, __layer);
 
             // setup parameters.
-            __layer.set_line_height(font_size_float);
+            // __layer.set_line_height(font_size_float);
             __layer.set_text_rendering_mode(printpdf::TextRenderingMode::FillClip);
             __layer.set_font(__font, font_size_float);
             // write lines in the text object,
             for line in &__text.lines {
-                __layer.write_text(line, __font);
                 let next_line_pos: Position = Position { x: 0.0, y: spacing_for_font_size };
-                // __layer.set_text_cursor(Mm(0.0), spacing_for_font_size);
                 Self::move_cursor(&mut cursor_instance, &next_line_pos, __layer);
+                __layer.write_text(line, __font);
             }
+
+            // clean the cursor after everything.
+            Self::clean_cursor(&mut cursor_instance, __layer);
+            
 
             Ok(())
         }
