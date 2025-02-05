@@ -4,17 +4,21 @@ mod util;
 mod test_writers {
     use std::{fmt::write, path::Path};
 
-    use crate::util::{diagonal_image_populated_renderablebuilder, overlap_text_populated_renderablebuilder};
+    use crate::util::{diagonal_image_populated_renderablebuilder, max_height_image_populated_renderablebuilder, max_width_image_populated_renderablebuilder, overlap_text_populated_renderablebuilder};
 
     use super::util::{basic_populated_renderablebuilder, two_text_populated_renderablebuilder};
 
     use eframe::egui::output;
     use LabelSoft::writers::{PDFGeneration::PDFWriter, Writer};    
-
+    // generic
     const OK_OUTPUT_PATH: &str = "tests/assets/tmp/ok";
+    // text
     const TWO_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/twotext";
     const OVERLAP_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/overlap";
+    // image
     const DIAGONAL_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/diagonalimg";
+    const MAX_HEIGHT_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/maxheight";
+    const MAX_WIDTH_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/maxwidth";
 
     // ======================
     // PDF GENERATION
@@ -83,6 +87,35 @@ mod test_writers {
         let write_res = writer.write();
         assert!(write_res.is_ok());
     }
+
+    #[test]
+    fn test_pdf_image_height_max() {
+        let fp = Path::new(MAX_HEIGHT_IMAGE_OUTPUT_PATH);
+        let buf = fp.with_extension("pdf");
+        let output_path: &str = buf.to_str().unwrap();
+
+        let mut writer = PDFWriter::new(output_path);
+        let builder = max_height_image_populated_renderablebuilder();
+        writer.add_builder_pages(builder).unwrap();
+
+        let write_res = writer.write();
+        assert!(write_res.is_ok());
+    }
+
+    #[test]
+    fn test_pdf_image_width_max() {
+        let fp = Path::new(MAX_WIDTH_IMAGE_OUTPUT_PATH);
+        let buf = fp.with_extension("pdf");
+        let output_path: &str = buf.to_str().unwrap();
+
+        let mut writer = PDFWriter::new(output_path);
+        let builder = max_width_image_populated_renderablebuilder();
+        writer.add_builder_pages(builder).unwrap();
+
+        let write_res = writer.write();
+        assert!(write_res.is_ok());
+    }
+
 
     // ======================
     // OTHER FORMATS

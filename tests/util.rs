@@ -107,6 +107,41 @@ pub fn diag_image() -> Image {
     return image;
 }
 
+pub fn max_height_image() -> Image {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+    // get the first/default page style.
+    let default_page_style = templateproject.template.page_styles.values().next().unwrap();
+    
+    let image = Image::new(
+        0.0,
+        0.0,
+        32.0,
+        default_page_style.height,
+        "tests/assets/bordercross.png".to_string()
+    ).unwrap();
+    return image;
+}
+
+pub fn max_width_image() -> Image {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+    // get the first/default page style.
+    let default_page_style = templateproject.template.page_styles.values().next().unwrap();
+    
+    let image = Image::new(
+        0.0,
+        0.0,
+        default_page_style.width,
+        32.0,
+        "tests/assets/bordercross.png".to_string()
+    ).unwrap();
+    return image;
+}
+
+
 // ======================
 // SPECIFIC COMPOUND INSTANCES
 // ======================
@@ -165,6 +200,28 @@ pub fn diagonal_image_populated_renderablebuilder() -> RenderableBuilder {
 
     templateproject.add_image(root_image()).unwrap();
     templateproject.add_image(diag_image()).unwrap();
+
+    let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+    return builder;
+}
+
+pub fn max_height_image_populated_renderablebuilder() -> RenderableBuilder {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+
+    templateproject.add_image(max_height_image()).unwrap();
+
+    let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+    return builder;
+}
+
+pub fn max_width_image_populated_renderablebuilder() -> RenderableBuilder {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+
+    templateproject.add_image(max_width_image()).unwrap();
 
     let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
     return builder;
