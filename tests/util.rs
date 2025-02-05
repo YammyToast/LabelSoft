@@ -1,4 +1,4 @@
-use LabelSoft::{data::{DataProject, DataProjectSchema}, renderables::RenderableBuilder, templategen::{templates::template::{Image, Template, Text}, PageStyleConfig, TemplateProject}};
+use LabelSoft::{data::{DataProject, DataProjectSchema}, renderables::RenderableBuilder, templategen::{templates::template::{self, Image, Template, Text}, PageStyleConfig, TemplateProject}};
 
 pub const FP_GOOD: &str = "tests/assets/good.csv";
 
@@ -96,6 +96,17 @@ pub fn root_image() -> Image {
     return image;
 }
 
+pub fn diag_image() -> Image {
+    let image = Image::new(
+        128.0,
+        128.0,
+        128.0,
+        128.0,
+        "tests/assets/examplebox.png".to_string()
+    ).unwrap();
+    return image;
+}
+
 // ======================
 // SPECIFIC COMPOUND INSTANCES
 // ======================
@@ -153,6 +164,7 @@ pub fn diagonal_image_populated_renderablebuilder() -> RenderableBuilder {
     let data = init.1;
 
     templateproject.add_image(root_image()).unwrap();
+    templateproject.add_image(diag_image()).unwrap();
 
     let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
     return builder;

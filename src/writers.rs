@@ -137,7 +137,7 @@ pub mod PDFGeneration {
                 _ => panic!("Unsupported image format! Convert the image to RGB or RGBA."),
             };
             let imagexobject = ImageXObject {
-                width: printpdf::Px(width as usize),
+                width: printpdf::Px(width as usize ),
                 height: printpdf::Px(height as usize),
                 color_space: printpdf::ColorSpace::Rgb,
                 bits_per_component: printpdf::ColorBits::Bit8,
@@ -225,16 +225,17 @@ pub mod PDFGeneration {
             // The image is positioned in printpdf from the bottom-left, and the coordinate root is also bottom-left.
             // 
             // Move to the top, move to the required position of the image, add on the height of the image.
-            // Multiple the image height by 0.24 to convert from Px -> Pt.
-            let translate_y: Mm = Pt(__page_height_r + y - (__image.height as f32 * 0.24)).into();
+            let translate_y: Mm = Pt(__page_height_r + y - (__image.height as f32)).into();
 
+            // dpi is 72.0 so that 1px = 1pt.
+            // This makes the measurements consistent.
             let transform = ImageTransform {
                 translate_x: Some(translate_x),
                 translate_y: Some(translate_y),
                 rotate: None,
                 scale_x: Some(1.0),
                 scale_y: Some(1.0),
-                dpi: None,
+                dpi: Some(72.0),
             };
             // add the image to the layer.
             // have to clone here for some reason.

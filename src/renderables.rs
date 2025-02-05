@@ -152,7 +152,7 @@ impl ImageRenderable {
         // resize the image per the user's input.
         let resize_width: u32 = __image.width.floor() as u32;
         let resize_height: u32 = __image.height.floor() as u32;
-        let resized = raw_img.resize(
+        let resized = raw_img.resize_exact(
             resize_width,
             resize_height,
             image::imageops::FilterType::Lanczos3,

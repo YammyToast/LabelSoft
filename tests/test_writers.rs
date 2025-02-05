@@ -71,7 +71,7 @@ mod test_writers {
     }
 
     #[test]
-    fn test_pdf_image_overlap() {
+    fn test_pdf_image_diag() {
         let fp = Path::new(DIAGONAL_IMAGE_OUTPUT_PATH);
         let buf = fp.with_extension("pdf");
         let output_path: &str = buf.to_str().unwrap();
