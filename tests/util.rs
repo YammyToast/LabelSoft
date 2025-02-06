@@ -1,4 +1,11 @@
-use LabelSoft::{data::{DataProject, DataProjectSchema}, renderables::RenderableBuilder, templategen::{templates::template::{self, Image, Template, Text}, PageStyleConfig, TemplateProject}};
+use LabelSoft::{
+    data::{DataProject, DataProjectSchema},
+    renderables::RenderableBuilder,
+    templategen::{
+        templates::template::{self, Image, Position, Template, Text},
+        PageStyleConfig, TemplateProject,
+    },
+};
 
 pub const FP_GOOD: &str = "tests/assets/good.csv";
 
@@ -55,7 +62,8 @@ pub fn basic_template_text() -> Text {
         "product_id".to_string(),
         12,
         "test_font".to_string(),
-    ).unwrap();
+    )
+    .unwrap();
     return text;
 }
 
@@ -67,11 +75,11 @@ pub fn address_template_text() -> Text {
         100.0,
         "shipping_address".to_string(),
         12,
-        "test_font".to_string()
-    ).unwrap();
+        "test_font".to_string(),
+    )
+    .unwrap();
     return address_text;
 }
-
 
 pub fn basic_template_image() -> Image {
     let image = Image::new(
@@ -91,8 +99,9 @@ pub fn root_image() -> Image {
         0.0,
         128.0,
         128.0,
-        "tests/assets/examplebox.png".to_string()
-    ).unwrap();
+        "tests/assets/examplebox.png".to_string(),
+    )
+    .unwrap();
     return image;
 }
 
@@ -102,8 +111,9 @@ pub fn diag_image() -> Image {
         128.0,
         128.0,
         128.0,
-        "tests/assets/examplebox.png".to_string()
-    ).unwrap();
+        "tests/assets/examplebox.png".to_string(),
+    )
+    .unwrap();
     return image;
 }
 
@@ -112,15 +122,21 @@ pub fn max_height_image() -> Image {
     let mut templateproject = init.0;
     let data = init.1;
     // get the first/default page style.
-    let default_page_style = templateproject.template.page_styles.values().next().unwrap();
-    
+    let default_page_style = templateproject
+        .template
+        .page_styles
+        .values()
+        .next()
+        .unwrap();
+
     let image = Image::new(
         0.0,
         0.0,
         32.0,
         default_page_style.height,
-        "tests/assets/bordercross.png".to_string()
-    ).unwrap();
+        "tests/assets/bordercross.png".to_string(),
+    )
+    .unwrap();
     return image;
 }
 
@@ -129,18 +145,35 @@ pub fn max_width_image() -> Image {
     let mut templateproject = init.0;
     let data = init.1;
     // get the first/default page style.
-    let default_page_style = templateproject.template.page_styles.values().next().unwrap();
-    
+    let default_page_style = templateproject
+        .template
+        .page_styles
+        .values()
+        .next()
+        .unwrap();
+
     let image = Image::new(
         0.0,
         0.0,
         default_page_style.width,
         32.0,
-        "tests/assets/bordercross.png".to_string()
-    ).unwrap();
+        "tests/assets/bordercross.png".to_string(),
+    )
+    .unwrap();
     return image;
 }
 
+pub fn corner_image(__position: Position, __width: f32, __height: f32) -> Image {
+    let image = Image::new(
+        __position.x,
+        __position.y,
+        __width,
+        __height,
+        "tests/assets/examplebox.png".to_string(),
+    )
+    .unwrap();
+    return image;
+}
 
 // ======================
 // SPECIFIC COMPOUND INSTANCES
@@ -163,7 +196,6 @@ pub fn two_text_populated_renderablebuilder() -> RenderableBuilder {
     let mut templateproject = init.0;
     let data = init.1;
 
-
     templateproject.add_text(basic_template_text()).unwrap();
     templateproject.add_text(address_template_text()).unwrap();
 
@@ -183,8 +215,9 @@ pub fn overlap_text_populated_renderablebuilder() -> RenderableBuilder {
         100.0,
         "shipping_address".to_string(),
         12,
-        "test_font".to_string()
-    ).unwrap();
+        "test_font".to_string(),
+    )
+    .unwrap();
 
     templateproject.add_text(basic_template_text()).unwrap();
     templateproject.add_text(overlap_text).unwrap();
@@ -222,6 +255,59 @@ pub fn max_width_image_populated_renderablebuilder() -> RenderableBuilder {
     let data = init.1;
 
     templateproject.add_image(max_width_image()).unwrap();
+
+    let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+    return builder;
+}
+
+pub fn four_corners_image_populated_renderablebuilder() -> RenderableBuilder {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+
+    let image_height = 64.0;
+    let image_width = 64.0;
+
+    // get the default page style.
+    let default_page_style = templateproject
+        .template
+        .page_styles
+        .values()
+        .next()
+        .unwrap();
+    let page_height = default_page_style.height;
+    let page_width = default_page_style.width;
+
+    // top-left, just 0,0
+    let tl_pos = Position { x: 0.0, y: 0.0 };
+    templateproject
+        .add_image(corner_image(tl_pos, image_width, image_height))
+        .unwrap();
+    // top-right, page_w - image_width, 0
+    let tr_pos = Position {
+        x: page_width - image_width,
+        y: 0.0,
+    };
+    templateproject
+        .add_image(corner_image(tr_pos, image_width, image_height))
+        .unwrap();
+
+    // bottom-left, 0, page_h - image_h
+    let bl_pos = Position {
+        x: 0.0,
+        y: page_height - image_height,
+    };
+    templateproject
+        .add_image(corner_image(bl_pos, image_width, image_height))
+        .unwrap();
+    // bottom-right, page_w - image_w, page_h - image_h
+    let br_pos = Position {
+        x: page_width - image_width,
+        y: page_height - image_height,
+    };
+    templateproject
+        .add_image(corner_image(br_pos, image_width, image_height))
+        .unwrap();
 
     let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
     return builder;

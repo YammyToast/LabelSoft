@@ -4,7 +4,7 @@ mod util;
 mod test_writers {
     use std::{fmt::write, path::Path};
 
-    use crate::util::{diagonal_image_populated_renderablebuilder, max_height_image_populated_renderablebuilder, max_width_image_populated_renderablebuilder, overlap_text_populated_renderablebuilder};
+    use crate::util::{diagonal_image_populated_renderablebuilder, four_corners_image_populated_renderablebuilder, max_height_image_populated_renderablebuilder, max_width_image_populated_renderablebuilder, overlap_text_populated_renderablebuilder};
 
     use super::util::{basic_populated_renderablebuilder, two_text_populated_renderablebuilder};
 
@@ -13,12 +13,13 @@ mod test_writers {
     // generic
     const OK_OUTPUT_PATH: &str = "tests/assets/tmp/ok";
     // text
-    const TWO_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/twotext";
-    const OVERLAP_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/overlap";
+    const TWO_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/text_two";
+    const OVERLAP_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/text_overlap";
     // image
-    const DIAGONAL_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/diagonalimg";
-    const MAX_HEIGHT_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/maxheight";
-    const MAX_WIDTH_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/maxwidth";
+    const DIAGONAL_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/img_diagonalimg";
+    const MAX_HEIGHT_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/img_maxheight";
+    const MAX_WIDTH_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/img_maxwidth";
+    const FOUR_CORNERS_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/img_fourcorners";
 
     // ======================
     // PDF GENERATION
@@ -116,6 +117,19 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+    #[test]
+    fn test_pdf_image_four_corners() {
+        let fp = Path::new(FOUR_CORNERS_IMAGE_OUTPUT_PATH);
+        let buf = fp.with_extension("pdf");
+        let output_path: &str = buf.to_str().unwrap();
+
+        let mut writer = PDFWriter::new(output_path);
+        let builder = four_corners_image_populated_renderablebuilder();
+        writer.add_builder_pages(builder).unwrap();
+
+        let write_res = writer.write();
+        assert!(write_res.is_ok());
+    }
 
     // ======================
     // OTHER FORMATS
