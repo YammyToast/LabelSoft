@@ -2,9 +2,9 @@ mod util;
 
 #[cfg(test)]
 mod test_writers {
-    use std::{fmt::write, path::Path};
+    use std::{path::Path};
 
-    use crate::util::{diagonal_image_populated_renderablebuilder, four_corners_image_populated_renderablebuilder, max_height_image_populated_renderablebuilder, max_width_image_populated_renderablebuilder, overlap_text_populated_renderablebuilder};
+    use crate::util::{diagonal_image_populated_renderablebuilder, font_size_text_populated_renderablebuilder, four_corners_image_populated_renderablebuilder, max_height_image_populated_renderablebuilder, max_width_image_populated_renderablebuilder, overlap_text_populated_renderablebuilder};
 
     use super::util::{basic_populated_renderablebuilder, two_text_populated_renderablebuilder};
 
@@ -15,6 +15,7 @@ mod test_writers {
     // text
     const TWO_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/text_two";
     const OVERLAP_TEXT_OUTPUT_PATH: &str = "tests/assets/tmp/text_overlap";
+    const TEXT_FONT_SIZE_OUTPUT_PATH: &str = "tests/assets/tmp/text_font_size";
     // image
     const DIAGONAL_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/img_diagonalimg";
     const MAX_HEIGHT_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/img_maxheight";
@@ -76,6 +77,21 @@ mod test_writers {
     }
 
     #[test]
+    fn test_pdf_text_font_size() {
+        let fp  = Path::new(TEXT_FONT_SIZE_OUTPUT_PATH);
+        let buf = fp.with_extension("pdf");
+        let output_path: &str = buf.to_str().unwrap();
+
+        let mut writer = PDFWriter::new(output_path);
+        let builder = font_size_text_populated_renderablebuilder();
+        writer.add_builder_pages(builder).unwrap();
+
+        let write_res = writer.write();
+        assert!(write_res.is_ok());
+    }
+
+
+    #[test]
     fn test_pdf_image_diag() {
         let fp = Path::new(DIAGONAL_IMAGE_OUTPUT_PATH);
         let buf = fp.with_extension("pdf");
@@ -134,7 +150,5 @@ mod test_writers {
     // ======================
     // OTHER FORMATS
     // ======================
-
-
 
 }

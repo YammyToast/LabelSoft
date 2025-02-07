@@ -9,9 +9,9 @@ use LabelSoft::{
 
 pub const FP_GOOD: &str = "tests/assets/good.csv";
 
-// ======================
+// ==================================================================
 // BUNDLING OBJECTS
-// ======================
+// ==================================================================
 
 pub fn basic_page_style(__default_name: &String) -> PageStyleConfig {
     PageStyleConfig::new(__default_name.clone(), 1280.0, 720.0, [1.0, 1.0, 1.0, 1.0]).unwrap()
@@ -49,10 +49,14 @@ pub fn basic_templateproject() -> (TemplateProject, DataProject) {
     return (templateproject, data);
 }
 
-// ======================
+// ==================================================================
 // PRIMITIVE RENDERING OBJECTS
-// ======================
+// ==================================================================
 
+
+// ==================================================================
+// TEXT
+// ==================================================================
 pub fn basic_template_text() -> Text {
     let text = Text::new(
         1.0,
@@ -61,7 +65,7 @@ pub fn basic_template_text() -> Text {
         100.0,
         "product_id".to_string(),
         12,
-        "test_font".to_string(),
+        "fonts/ARIAL.TTF".to_string(),
     )
     .unwrap();
     return text;
@@ -75,11 +79,15 @@ pub fn address_template_text() -> Text {
         100.0,
         "shipping_address".to_string(),
         12,
-        "test_font".to_string(),
+        "fonts/ARIAL.TTF".to_string(),
     )
     .unwrap();
     return address_text;
 }
+
+// ==================================================================
+// IMAGE
+// ==================================================================
 
 pub fn basic_template_image() -> Image {
     let image = Image::new(
@@ -179,6 +187,10 @@ pub fn corner_image(__position: Position, __width: f32, __height: f32) -> Image 
 // SPECIFIC COMPOUND INSTANCES
 // ======================
 
+// ==================================================================
+// TEXT
+// ==================================================================
+
 pub fn basic_populated_renderablebuilder() -> RenderableBuilder {
     let init = basic_templateproject();
     let mut templateproject = init.0;
@@ -215,7 +227,7 @@ pub fn overlap_text_populated_renderablebuilder() -> RenderableBuilder {
         100.0,
         "shipping_address".to_string(),
         12,
-        "test_font".to_string(),
+        "fonts/ARIAL.TTF".to_string(),
     )
     .unwrap();
 
@@ -225,6 +237,53 @@ pub fn overlap_text_populated_renderablebuilder() -> RenderableBuilder {
     let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
     return builder;
 }
+
+pub fn font_size_text_populated_renderablebuilder() -> RenderableBuilder {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+
+    let large_text = Text::new(
+        1.0,
+        1.0,
+        200.0,
+        100.0,
+        "shipping_address".to_string(),
+        48,
+        "fonts/ARIAL.TTF".to_string(),
+    ).unwrap();
+
+    let medium_text = Text::new(
+        1.0,
+        50.0,
+        200.0,
+        100.0,
+        "shipping_address".to_string(),
+        24,
+        "fonts/ARIAL.TTF".to_string()
+    ).unwrap();
+
+    let small_text = Text::new(
+        1.0,
+        76.0,
+        200.0,
+        100.0,
+        "shipping_address".to_string(),
+        12,
+        "fonts/ARIAL.TTF".to_string()
+    ).unwrap();
+
+    templateproject.add_text(large_text).unwrap();
+    templateproject.add_text(medium_text).unwrap();
+    templateproject.add_text(small_text).unwrap();
+
+    let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+    return builder;
+}
+
+// ==================================================================
+// IMAGES
+// ==================================================================
 
 pub fn diagonal_image_populated_renderablebuilder() -> RenderableBuilder {
     let init = basic_templateproject();
