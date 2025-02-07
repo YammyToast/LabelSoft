@@ -261,9 +261,7 @@ pub mod PDFGeneration {
 
             let (doc, _page, _layer) =
                 PdfDocument::new("output", page_width, page_height, "main_layer");
-            let font = doc
-                .add_external_font(File::open("fonts/ARIAL.TTF").unwrap())
-                .unwrap();
+
 
             let top_margin: Mm = Pt(init_page_get.page_style.margins[0]).into();
             let left_margin: Mm = Pt(init_page_get.page_style.margins[3]).into();
@@ -283,6 +281,11 @@ pub mod PDFGeneration {
 
                     // RENDER TEXT
                     if let Some(object) = renderableobject.downcast_ref::<TextRenderable>() {
+                        // load the font
+                        let font = doc
+                        .add_external_font(File::open(&object.font).unwrap())
+                        .unwrap();
+                    
                         // add text
                         let res = match Self::add_text(
                             &current_layer,
