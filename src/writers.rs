@@ -28,7 +28,12 @@ pub fn generate_output_directories(__fp: &Path) -> Option<Box<dyn std::error::Er
 // PDF Output
 // ======================
 pub mod PDFGeneration {
-    use std::{fs::File, io::BufWriter, path::Path};
+    use std::{
+        collections::{HashMap, HashSet},
+        fs::File,
+        io::BufWriter,
+        path::Path,
+    };
 
     use ::image::{DynamicImage, GenericImageView};
     use eframe::epaint::image;
@@ -39,7 +44,7 @@ pub mod PDFGeneration {
 
     use crate::{
         renderables::{ImageRenderable, RenderableBuilder, RenderablePage, TextRenderable},
-        templategen::templates::template::{PageStyle, Position},
+        templategen::templates::template::{PageStyle, Position, Text},
     };
 
     use super::{generate_output_directories, Writer};
@@ -137,7 +142,7 @@ pub mod PDFGeneration {
                 _ => panic!("Unsupported image format! Convert the image to RGB or RGBA."),
             };
             let imagexobject = ImageXObject {
-                width: printpdf::Px(width as usize ),
+                width: printpdf::Px(width as usize),
                 height: printpdf::Px(height as usize),
                 color_space: printpdf::ColorSpace::Rgb,
                 bits_per_component: printpdf::ColorBits::Bit8,
@@ -148,6 +153,24 @@ pub mod PDFGeneration {
                 clipping_bbox: None,
             };
             return imagexobject;
+        }
+
+        fn build_font_map(&self, __doc: &PdfDocumentReference) -> HashMap<String, IndirectFontRef> {
+            let unique_font_paths: HashSet<String> = self
+                .__page_descriptors
+                .iter()
+                .flat_map(|page| &page.renderables)
+                .filter_map(|inner| inner.downcast_ref::<TextRenderable>())
+                .map(|text_obj| text_obj.font.clone())
+                .collect();
+            let mut font_map: HashMap<String, IndirectFontRef> = HashMap::new();
+            for font_path in unique_font_paths.iter() {
+                let font = __doc
+                .add_external_font(File::open(&font_path).unwrap())
+                .unwrap();
+                font_map.insert(font_path.to_string(), font);
+            }
+            return font_map;
         }
 
         fn add_page(
@@ -223,7 +246,7 @@ pub mod PDFGeneration {
             let translate_x: Mm = Pt(x).into();
             // Using top-left coordinates system.
             // The image is positioned in printpdf from the bottom-left, and the coordinate root is also bottom-left.
-            // 
+            //
             // Move to the top, move to the required position of the image, add on the height of the image.
             let translate_y: Mm = Pt(__page_height_r + y - (__image.height as f32)).into();
 
@@ -262,9 +285,15 @@ pub mod PDFGeneration {
             let (doc, _page, _layer) =
                 PdfDocument::new("output", page_width, page_height, "main_layer");
 
-
             let top_margin: Mm = Pt(init_page_get.page_style.margins[0]).into();
             let left_margin: Mm = Pt(init_page_get.page_style.margins[3]).into();
+            
+            // ============
+            // Optimization Collections
+            // ============
+            let loaded_font_map = self.build_font_map(&doc);
+            println!("{:?}", loaded_font_map);
+            
             // page level iteration.
             for renderablepage in &self.__page_descriptors {
                 // initialize page with parameters.
@@ -283,9 +312,9 @@ pub mod PDFGeneration {
                     if let Some(object) = renderableobject.downcast_ref::<TextRenderable>() {
                         // load the font
                         let font = doc
-                        .add_external_font(File::open(&object.font).unwrap())
-                        .unwrap();
-                    
+                            .add_external_font(File::open(&object.font).unwrap())
+                            .unwrap();
+
                         // add text
                         let res = match Self::add_text(
                             &current_layer,
