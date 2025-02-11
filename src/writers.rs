@@ -292,7 +292,6 @@ pub mod PDFGeneration {
             // Optimization Collections
             // ============
             let loaded_font_map = self.build_font_map(&doc);
-            println!("{:?}", loaded_font_map);
             
             // page level iteration.
             for renderablepage in &self.__page_descriptors {
@@ -310,12 +309,15 @@ pub mod PDFGeneration {
 
                     // RENDER TEXT
                     if let Some(object) = renderableobject.downcast_ref::<TextRenderable>() {
-                        // load the font
-                        let font = doc
-                            .add_external_font(File::open(&object.font).unwrap())
-                            .unwrap();
-
-                        // add text
+                        // get the required font pointer for this text.
+                        let font = match loaded_font_map.get(&object.font) {
+                            Some(font) => font,
+                            None => {
+                                log::error!("Couldn't load font from path: {:?}", &object.font);
+                                continue;
+                            }
+                        };
+                        
                         let res = match Self::add_text(
                             &current_layer,
                             &object,
