@@ -90,6 +90,25 @@ mod test_writers {
         assert_eq!(font_map.len(), 2);
     }
 
+    #[test]
+    fn test_element_add_internal() {
+        let mut writer = PDFWriter::new("PLACEHOLDER");
+        let builder = basic_populated_renderablebuilder();
+        
+        let object_count = builder.get_page_object_count(0).unwrap();
+        
+        writer.add_builder_pages(builder).unwrap();
+
+        // run the add method and get returned the indices of all elements correctly added.
+        let test_elements_indices_res = writer.test_add_page_elements();
+        // assert that the procedure ran correct (not necessarily that all elements added correctly).
+        assert!(test_elements_indices_res.is_ok());
+        let test_elements_indices = test_elements_indices_res.unwrap();
+        // check that in = out
+        // the elements in the basic renderablebuilder should always work correctly.
+        assert_eq!(test_elements_indices.len(), object_count)
+    }
+
     // ======================
     // PDF GENERATION
     // ======================
