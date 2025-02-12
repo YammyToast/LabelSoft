@@ -94,9 +94,9 @@ mod test_writers {
     fn test_element_add_internal() {
         let mut writer = PDFWriter::new("PLACEHOLDER");
         let builder = basic_populated_renderablebuilder();
-        
+
         let object_count = builder.get_page_object_count(0).unwrap();
-        
+
         writer.add_builder_pages(builder).unwrap();
 
         // run the add method and get returned the indices of all elements correctly added.
@@ -107,6 +107,38 @@ mod test_writers {
         // check that in = out
         // the elements in the basic renderablebuilder should always work correctly.
         assert_eq!(test_elements_indices.len(), object_count)
+    }
+
+    #[test]
+    fn test_element_add_invalid_text() {
+        let init = basic_templateproject();
+        let mut templateproject = init.0;
+        let data = init.1;
+
+        let invalid_text = Text::new(
+            0.0,
+            0.0,
+            100.0,
+            100.0,
+            "INVALID COLUMN NAME".to_string(),
+            12,
+            "fonts/ARIAL.TTF".to_string(),
+        )
+        .unwrap();
+
+        // Add the text but don't check whether it returned an error.
+        // Ideally this does return an error, however checking it is what we want from this test.
+        let _ = templateproject.add_text(invalid_text);
+
+        let mut writer = PDFWriter::new("PLACEHOLDER");
+        let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+
+        // get the first page as any will work.
+        let object_count = builder.get_page_object_count(0).unwrap();
+
+        // check that the added objects is still zero.
+        // this should occur if the add_text returns an error.
+        assert_eq!(object_count, 0);
     }
 
     // ======================
