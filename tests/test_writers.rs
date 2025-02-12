@@ -2,14 +2,25 @@ mod util;
 
 #[cfg(test)]
 mod test_writers {
-    use std::{path::Path};
+    use std::path::Path;
 
-    use crate::util::{diagonal_image_populated_renderablebuilder, font_size_text_populated_renderablebuilder, four_corners_image_populated_renderablebuilder, four_fonts_text_populated_renderablebuilder, max_height_image_populated_renderablebuilder, max_width_image_populated_renderablebuilder, overlap_text_populated_renderablebuilder};
+    use crate::util::{
+        basic_templateproject, diagonal_image_populated_renderablebuilder, font_arial_text,
+        font_calibri_text, font_montserrat_text, font_roboto_text,
+        font_size_text_populated_renderablebuilder, four_corners_image_populated_renderablebuilder,
+        four_fonts_text_populated_renderablebuilder, max_height_image_populated_renderablebuilder,
+        max_width_image_populated_renderablebuilder, overlap_text_populated_renderablebuilder,
+    };
 
     use super::util::{basic_populated_renderablebuilder, two_text_populated_renderablebuilder};
 
     use eframe::egui::output;
-    use LabelSoft::writers::{PDFGeneration::PDFWriter, Writer};    
+    use printpdf::font;
+    use LabelSoft::{
+        renderables::RenderableBuilder,
+        templategen::templates::template::Text,
+        writers::{PDFGeneration::PDFWriter, Writer},
+    };
     // generic
     const OK_OUTPUT_PATH: &str = "tests/assets/tmp/ok";
     // text
@@ -24,9 +35,64 @@ mod test_writers {
     const FOUR_CORNERS_IMAGE_OUTPUT_PATH: &str = "tests/assets/tmp/img_fourcorners";
 
     // ======================
-    // PDF GENERATION
+    // FUNC LEVEL
     // ======================
 
+    #[test]
+    fn test_font_loader() {
+        let init = basic_templateproject();
+        let mut templateproject = init.0;
+        let data = init.1;
+
+        templateproject.add_text(font_arial_text()).unwrap();
+        templateproject.add_text(font_roboto_text()).unwrap();
+        templateproject.add_text(font_calibri_text()).unwrap();
+        templateproject.add_text(font_montserrat_text()).unwrap();
+
+        let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+        let mut writer = PDFWriter::new("PLACEHOLDER");
+        writer.add_builder_pages(builder).unwrap();
+
+        let font_map = writer.test_build_font_map();
+        assert_eq!(font_map.len(), 4);
+    }
+
+    #[test]
+    fn test_font_loader_invalid_path() {
+        let init = basic_templateproject();
+        let mut templateproject = init.0;
+        let data = init.1;
+
+        // setup font with invalid path
+        let invalid_text = Text::new(
+            0.0,
+            14.0,
+            100.0,
+            100.0,
+            "shipping_address".to_string(),
+            12,
+            "INVALID_PATH".to_string(),
+        )
+        .unwrap();
+
+        // valid font 1
+        templateproject.add_text(font_arial_text()).unwrap();
+        // invalid font
+        templateproject.add_text(invalid_text).unwrap();
+        // valid font 2
+        templateproject.add_text(font_calibri_text()).unwrap();
+
+        let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+        let mut writer = PDFWriter::new("PLACEHOLDER");
+        writer.add_builder_pages(builder).unwrap();
+
+        let font_map = writer.test_build_font_map();
+        assert_eq!(font_map.len(), 2);
+    }
+
+    // ======================
+    // PDF GENERATION
+    // ======================
 
     /// Test that the standard PDF writer processess successfully.
     /// NOTE that this does not encompass the logic error of output not looking as expected.
@@ -37,8 +103,7 @@ mod test_writers {
         let fp = Path::new(OK_OUTPUT_PATH);
         let buf = fp.with_extension("pdf");
         let output_path = buf.to_str().unwrap();
-        
-        
+
         let mut writer = PDFWriter::new(output_path);
         // get basic renderable.
         let builder = basic_populated_renderablebuilder();
@@ -79,7 +144,7 @@ mod test_writers {
 
     #[test]
     fn test_pdf_text_font_size() {
-        let fp  = Path::new(TEXT_FONT_SIZE_OUTPUT_PATH);
+        let fp = Path::new(TEXT_FONT_SIZE_OUTPUT_PATH);
         let buf = fp.with_extension("pdf");
         let output_path: &str = buf.to_str().unwrap();
 
@@ -164,5 +229,4 @@ mod test_writers {
     // ======================
     // OTHER FORMATS
     // ======================
-
 }

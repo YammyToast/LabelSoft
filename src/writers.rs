@@ -165,12 +165,33 @@ pub mod PDFGeneration {
                 .collect();
             let mut font_map: HashMap<String, IndirectFontRef> = HashMap::new();
             for font_path in unique_font_paths.iter() {
-                let font = __doc
-                .add_external_font(File::open(&font_path).unwrap())
-                .unwrap();
+                // initialize and verify the provided file path.
+                let fp = match File::open(&font_path) {
+                    Err(e) => {
+                        log::error!("Couldn't find file path: {:?}, e:{:?}", font_path, e);
+                        continue;
+                    }
+                    Ok(v) => v,
+                };
+                // load font from file path and retain indirectpointer. printpdf has its own font wrapper,
+                // however we also implement our own.
+                let font = match __doc.add_external_font(fp) {
+                    Err(e) => {
+                        log::error!("Couldn't load font from path: {:?}, e:{:?}.", font_path, e);
+                        continue;
+                    }
+                    Ok(v) => v,
+                };
+                // save to the map.
                 font_map.insert(font_path.to_string(), font);
             }
             return font_map;
+        }
+
+        // #[cfg(test)]
+        pub fn test_build_font_map(&self) -> HashMap<String, IndirectFontRef> {
+            let (doc, _page, _layer) = PdfDocument::new("test", Mm(0.0), Mm(0.0), "test_layer");
+            return self.build_font_map(&doc);
         }
 
         fn add_page(
@@ -287,12 +308,15 @@ pub mod PDFGeneration {
 
             let top_margin: Mm = Pt(init_page_get.page_style.margins[0]).into();
             let left_margin: Mm = Pt(init_page_get.page_style.margins[3]).into();
-            
+
             // ============
             // Optimization Collections
             // ============
             let loaded_font_map = self.build_font_map(&doc);
-            
+
+            // ============
+            // Generation Loop
+            // ============
             // page level iteration.
             for renderablepage in &self.__page_descriptors {
                 // initialize page with parameters.
@@ -317,7 +341,7 @@ pub mod PDFGeneration {
                                 continue;
                             }
                         };
-                        
+
                         let res = match Self::add_text(
                             &current_layer,
                             &object,
