@@ -58,6 +58,7 @@ mod test_writers {
         assert_eq!(font_map.len(), 4);
     }
 
+    /// Tests that multiple occurances of the same font are reduced to one instance by the loader.
     #[test]
     fn test_font_loader_duplicate_fonts() {
         let init = basic_templateproject();
@@ -76,6 +77,7 @@ mod test_writers {
         assert_eq!(font_map.len(), 1);
     }
 
+    /// Tests that the font loader will not load an invalid font path. The font loader should keep loading regardless of errors.
     #[test]
     fn test_font_loader_invalid_path() {
         let init = basic_templateproject();
@@ -109,6 +111,7 @@ mod test_writers {
         assert_eq!(font_map.len(), 2);
     }
 
+    /// Tests the result of the internal function responsible for writing elements to PDFs.
     #[test]
     fn test_element_add_internal() {
         let mut writer = PDFWriter::new("PLACEHOLDER");
@@ -128,6 +131,7 @@ mod test_writers {
         assert_eq!(test_elements_indices.len(), object_count)
     }
 
+    /// Tests that the internal element adding function does not add an invalid text element to the output.
     #[test]
     fn test_element_add_invalid_text() {
         let init = basic_templateproject();
