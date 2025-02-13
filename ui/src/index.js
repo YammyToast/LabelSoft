@@ -5,18 +5,26 @@ const path = require('path');
 let win;
 let rustProcess;
 
-app.whenReady().then(() => {
-    win = new BrowserWindow({
+const INDEX_HTML_FP = "../views/index.html"
+
+function create_window(__load_file_path) {
+    const win = new BrowserWindow({
         width: 800,
         height: 600,
+        autoHideMenuBar: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js')
         }
-    });
+    })
 
-    win.loadFile('index.html');
+    win.loadFile(__load_file_path)
+
+}
+
+app.whenReady().then(() => {
+    create_window(INDEX_HTML_FP)
 
     // Start Rust backend
     // rustProcess = spawn(path.join(__dirname, 'rust-backend'));
