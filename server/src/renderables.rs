@@ -199,8 +199,8 @@ impl RenderablePage {
 #[derive(Debug)]
 /// ## RenderableBuilder
 /// Factory object which handles the population of a template with a loaded dataset.
-/// 
-/// Converts a template into a fully saturated, ordered collection of page groups, which can be 
+///
+/// Converts a template into a fully saturated, ordered collection of page groups, which can be
 /// passed into any writer for output.
 pub struct RenderableBuilder {
     page_grouped_object_lists: Vec<RenderablePage>,
@@ -211,12 +211,12 @@ impl RenderableBuilder {
     /// Handles object specific conversion for Template-Objects into Renderable-Objects.
     /// This method has to be called for each page in the output as conversions sometimes rely on data-record
     /// specific logic.
-    /// 
+    ///
     /// ### Parameters
     /// - __objects: Vector of unsorted TemplateObjects. DisplayObject is a simple pointer wrapper which enumerates
     /// template objects into a sized.
     /// - __record: Object which wraps around a single record/horizontal line of data in the dataset.
-    /// - __schema: Indexed columnar schema derived from the dataset being used. 
+    /// - __schema: Indexed columnar schema derived from the dataset being used.
     fn convert_template_objects(
         __objects: Vec<DisplayObject>,
         __record: DataRecordIndexed,
@@ -290,6 +290,18 @@ impl RenderableBuilder {
         Ok(RenderableBuilder {
             page_grouped_object_lists: pages,
         })
+    }
+
+    /// ### Get Page Object Count
+    /// Get the number of renderable objects that exist on the page with the given index.
+    pub fn get_page_object_count(&self, __index: usize) -> Option<usize> {
+        let page_get_res = self.page_grouped_object_lists.get(__index);
+        match page_get_res {
+            Some(page) => {
+                return Some(page.renderables.len());
+            }
+            None => return None,
+        }
     }
 }
 

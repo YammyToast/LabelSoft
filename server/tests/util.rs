@@ -85,6 +85,58 @@ pub fn address_template_text() -> Text {
     return address_text;
 }
 
+pub fn font_arial_text() -> Text {
+    let text = Text::new(
+        1.0,
+        1.0,
+        100.0,
+        100.0,
+        "shipping_address".to_string(),
+        12,
+        "fonts/ARIAL.TTF".to_string()
+    ).unwrap();
+    return text;
+}
+
+pub fn font_roboto_text() -> Text {
+    let text = Text::new(
+        1.0,
+        14.0,
+        100.0,
+        100.0,
+        "shipping_address".to_string(),
+        12,
+        "fonts/ROBOTO.ttf".to_string()
+    ).unwrap();
+    return text;
+}
+
+pub fn font_calibri_text() -> Text {
+    let text = Text::new(
+        1.0,
+        28.0,
+        100.0,
+        100.0,
+        "shipping_address".to_string(),
+        12,
+        "fonts/CALIBRI.ttf".to_string()
+    ).unwrap();
+    return text;
+}
+
+pub fn font_montserrat_text() -> Text {
+    let text = Text::new(
+        1.0,
+        42.0,
+        100.0,
+        100.0,
+        "shipping_address".to_string(),
+        12,
+        "fonts/MONTSERRAT.ttf".to_string()
+    ).unwrap();
+    return text;
+}
+
 // ==================================================================
 // IMAGE
 // ==================================================================
@@ -276,6 +328,20 @@ pub fn font_size_text_populated_renderablebuilder() -> RenderableBuilder {
     templateproject.add_text(large_text).unwrap();
     templateproject.add_text(medium_text).unwrap();
     templateproject.add_text(small_text).unwrap();
+
+    let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+    return builder;
+}
+
+pub fn four_fonts_text_populated_renderablebuilder() -> RenderableBuilder {
+    let init = basic_templateproject();
+    let mut templateproject = init.0;
+    let data = init.1;
+
+    templateproject.add_text(font_arial_text()).unwrap();
+    templateproject.add_text(font_roboto_text()).unwrap();
+    templateproject.add_text(font_calibri_text()).unwrap();
+    templateproject.add_text(font_montserrat_text()).unwrap();
 
     let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
     return builder;

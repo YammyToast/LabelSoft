@@ -28,7 +28,12 @@ pub fn generate_output_directories(__fp: &Path) -> Option<Box<dyn std::error::Er
 // PDF Output
 // ======================
 pub mod PDFGeneration {
-    use std::{fs::File, io::BufWriter, path::Path};
+    use std::{
+        collections::{HashMap, HashSet},
+        fs::File,
+        io::BufWriter,
+        path::Path,
+    };
 
     use ::image::{DynamicImage, GenericImageView};
     use eframe::epaint::image;
@@ -39,7 +44,7 @@ pub mod PDFGeneration {
 
     use crate::{
         renderables::{ImageRenderable, RenderableBuilder, RenderablePage, TextRenderable},
-        templategen::templates::template::{PageStyle, Position},
+        templategen::templates::template::{PageStyle, Position, Text},
     };
 
     use super::{generate_output_directories, Writer};
@@ -124,6 +129,10 @@ pub mod PDFGeneration {
             // println!("Provided: {:?}, Change: {:?}, After: {:?}", __position.x, change_x, __cursor_tracker.cursor_x);
         }
 
+        // ======================
+        // CONVERSION AND LOADERS
+        // ======================
+
         fn dynamicimage2imagexobject(__image: &DynamicImage) -> ImageXObject {
             let (width, height) = __image.dimensions();
 
@@ -137,7 +146,7 @@ pub mod PDFGeneration {
                 _ => panic!("Unsupported image format! Convert the image to RGB or RGBA."),
             };
             let imagexobject = ImageXObject {
-                width: printpdf::Px(width as usize ),
+                width: printpdf::Px(width as usize),
                 height: printpdf::Px(height as usize),
                 color_space: printpdf::ColorSpace::Rgb,
                 bits_per_component: printpdf::ColorBits::Bit8,
@@ -149,6 +158,49 @@ pub mod PDFGeneration {
             };
             return imagexobject;
         }
+
+        fn build_font_map(&self, __doc: &PdfDocumentReference) -> HashMap<String, IndirectFontRef> {
+            let unique_font_paths: HashSet<String> = self
+                .__page_descriptors
+                .iter()
+                .flat_map(|page| &page.renderables)
+                .filter_map(|inner| inner.downcast_ref::<TextRenderable>())
+                .map(|text_obj| text_obj.font.clone())
+                .collect();
+            let mut font_map: HashMap<String, IndirectFontRef> = HashMap::new();
+            for font_path in unique_font_paths.iter() {
+                // initialize and verify the provided file path.
+                let fp = match File::open(&font_path) {
+                    Err(e) => {
+                        log::error!("Couldn't find file path: {:?}, e:{:?}", font_path, e);
+                        continue;
+                    }
+                    Ok(v) => v,
+                };
+                // load font from file path and retain indirectpointer. printpdf has its own font wrapper,
+                // however we also implement our own.
+                let font = match __doc.add_external_font(fp) {
+                    Err(e) => {
+                        log::error!("Couldn't load font from path: {:?}, e:{:?}.", font_path, e);
+                        continue;
+                    }
+                    Ok(v) => v,
+                };
+                // save to the map.
+                font_map.insert(font_path.to_string(), font);
+            }
+            return font_map;
+        }
+
+        // #[cfg(test)]
+        pub fn test_build_font_map(&self) -> HashMap<String, IndirectFontRef> {
+            let (doc, _page, _layer) = PdfDocument::new("test", Mm(0.0), Mm(0.0), "test_layer");
+            return self.build_font_map(&doc);
+        }
+
+        // ======================
+        // ADD DOCUMENT OBJECTS
+        // ======================
 
         fn add_page(
             __doc: &PdfDocumentReference,
@@ -223,7 +275,7 @@ pub mod PDFGeneration {
             let translate_x: Mm = Pt(x).into();
             // Using top-left coordinates system.
             // The image is positioned in printpdf from the bottom-left, and the coordinate root is also bottom-left.
-            // 
+            //
             // Move to the top, move to the required position of the image, add on the height of the image.
             let translate_y: Mm = Pt(__page_height_r + y - (__image.height as f32)).into();
 
@@ -244,6 +296,92 @@ pub mod PDFGeneration {
             Ok(())
         }
 
+        // ======================
+        // GENERATION
+        // ======================
+
+        fn add_page_elements(
+            &self,
+            __renderables: &Vec<Box<dyn std::any::Any>>,
+            __page_style: &PageStyle,
+            __loaded_font_map: &HashMap<String, IndirectFontRef>,
+            __layer: &PdfLayerReference,
+        ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+            // tracks the indices (and thus elements) which have been added correctly.
+            // this is primarily used for testing.
+            let mut added_indices: Vec<usize> = Vec::new();
+            // object level iteration.
+            for (i, renderableobject) in __renderables.iter().enumerate() {
+                // as vec is of any type, cannot use match statement.
+
+                // RENDER TEXT
+                if let Some(object) = renderableobject.downcast_ref::<TextRenderable>() {
+                    // get the required font pointer for this text.
+                    let font = match __loaded_font_map.get(&object.font) {
+                        Some(font) => font,
+                        None => {
+                            log::error!("Couldn't load font from path: {:?}", &object.font);
+                            continue;
+                        }
+                    };
+
+                    let res = match Self::add_text(&__layer, &object, &font, &__page_style.height) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            println!("Error adding text in PDFWriter: {:?}", e);
+                            continue;
+                        }
+                    };
+                // RENDER IMAGES
+                } else if let Some(object) = renderableobject.downcast_ref::<ImageRenderable>() {
+                    // add image
+                    let res = match Self::add_image(&__layer, &object, &__page_style.height) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            println!("Error adding image in PDFWriter: {:?}", e);
+                            continue;
+                        }
+                    };
+                } else {
+                    log::error!(
+                        "Unknown or Unimplemented Renderable Encountered at index: {:?}",
+                        i
+                    );
+                    continue;
+                }
+                // add indices to the tracking vector.
+                added_indices.push(i);
+            }
+
+            return Ok(added_indices);
+        }
+
+        pub fn test_add_page_elements(&self) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+            let (doc, _page, _layer) =
+                PdfDocument::new("test_output", Mm(0.0), Mm(0.0), "test_layer");
+
+            let loaded_font_map = self.build_font_map(&doc);
+            // just run one page for the test. it will be the same on every page anyway.
+            let renderablepage = self.__page_descriptors.iter().next().unwrap();
+            // handle creation and reference to printpdf page.
+            let (current_page, current_layer) = Self::add_page(&doc, &renderablepage.page_style);
+
+            // Iteration method which works through adding each element individually.
+            match self.add_page_elements(
+                &renderablepage.renderables,
+                &renderablepage.page_style,
+                &loaded_font_map,
+                &current_layer,
+            ) {
+                Ok(v) => return Ok(v),
+                Err(e) => return Err(e),
+            };
+        }
+
+        // ======================
+        // ENTRY POINTS
+        // ======================
+
         fn generate_pdf(&self) -> Result<PdfDocumentReference, Box<dyn std::error::Error>> {
             // Printpdf requires that the document be initialized with the parameters for the first page,
             // height, width etc, and then returns pointers to the generated page and layer.
@@ -262,11 +400,19 @@ pub mod PDFGeneration {
             let (doc, _page, _layer) =
                 PdfDocument::new("output", page_width, page_height, "main_layer");
 
-
             let top_margin: Mm = Pt(init_page_get.page_style.margins[0]).into();
             let left_margin: Mm = Pt(init_page_get.page_style.margins[3]).into();
+
+            // ============
+            // Optimization Collections
+            // ============
+            let loaded_font_map = self.build_font_map(&doc);
+
+            // ============
+            // Generation Loop
+            // ============
             // page level iteration.
-            for renderablepage in &self.__page_descriptors {
+            for (page_num, renderablepage) in self.__page_descriptors.iter().enumerate() {
                 // initialize page with parameters.
                 let (current_page, current_layer) =
                     Self::add_page(&doc, &renderablepage.page_style);
@@ -275,47 +421,23 @@ pub mod PDFGeneration {
                 // it initially starts bottom left.
                 current_layer.set_text_cursor(left_margin, page_height - top_margin);
 
-                // object level iteration.
-                for renderableobject in &renderablepage.renderables {
-                    // as vec is of any type, cannot use match statement.
-
-                    // RENDER TEXT
-                    if let Some(object) = renderableobject.downcast_ref::<TextRenderable>() {
-                        // load the font
-                        let font = doc
-                        .add_external_font(File::open(&object.font).unwrap())
-                        .unwrap();
-                    
-                        // add text
-                        let res = match Self::add_text(
-                            &current_layer,
-                            &object,
-                            &font,
-                            &renderablepage.page_style.height,
-                        ) {
-                            Ok(_) => {}
-                            Err(e) => {
-                                println!("Error adding text in PDFWriter: {:?}", e);
-                                continue;
-                            }
-                        };
-                    // RENDER IMAGES
-                    } else if let Some(object) = renderableobject.downcast_ref::<ImageRenderable>()
-                    {
-                        // add image
-                        let res = match Self::add_image(
-                            &current_layer,
-                            &object,
-                            &renderablepage.page_style.height,
-                        ) {
-                            Ok(_) => {}
-                            Err(e) => {
-                                println!("Error adding image in PDFWriter: {:?}", e);
-                                continue;
-                            }
-                        };
+                // Iteration method which works through adding each element individually.
+                match self.add_page_elements(
+                    &renderablepage.renderables,
+                    &renderablepage.page_style,
+                    &loaded_font_map,
+                    &current_layer,
+                ) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        log::error!(
+                            "Couldn't add page elements for page: {:?}, e:{:?}",
+                            page_num,
+                            e
+                        );
+                        continue;
                     }
-                }
+                };
             }
 
             return Ok(doc);
