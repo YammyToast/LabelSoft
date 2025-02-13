@@ -18,7 +18,7 @@ mod test_writers {
     use printpdf::font;
     use LabelSoft::{
         renderables::RenderableBuilder,
-        templategen::templates::template::Text,
+        templategen::templates::template::{Image, Text},
         writers::{PDFGeneration::PDFWriter, Writer},
     };
     // generic
@@ -38,6 +38,7 @@ mod test_writers {
     // FUNC LEVEL
     // ======================
 
+    /// Tests that the font loader subroutine correctly maintains references to 4 unique fonts.
     #[test]
     fn test_font_loader() {
         let init = basic_templateproject();
@@ -55,6 +56,24 @@ mod test_writers {
 
         let font_map = writer.test_build_font_map();
         assert_eq!(font_map.len(), 4);
+    }
+
+    #[test]
+    fn test_font_loader_duplicate_fonts() {
+        let init = basic_templateproject();
+        let mut templateproject = init.0;
+        let data = init.1;
+
+        templateproject.add_text(font_arial_text()).unwrap();
+        templateproject.add_text(font_arial_text()).unwrap();
+        templateproject.add_text(font_arial_text()).unwrap();
+
+        let builder = RenderableBuilder::new_from_template_and_data(templateproject, data).unwrap();
+        let mut writer = PDFWriter::new("PLACEHOLDER");
+        writer.add_builder_pages(builder).unwrap();
+
+        let font_map = writer.test_build_font_map();
+        assert_eq!(font_map.len(), 1);
     }
 
     #[test]
@@ -164,6 +183,8 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+
+    /// Generates a PDF document with two text elements.
     #[test]
     fn test_pdf_two_text_generation() {
         let fp = Path::new(TWO_TEXT_OUTPUT_PATH);
@@ -179,6 +200,8 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+    /// Generates a PDF documents which has two text elements place on top of one another.
+    /// This is to test that positions are absolute.
     #[test]
     fn test_pdf_overlap_text_generation() {
         let fp = Path::new(OVERLAP_TEXT_OUTPUT_PATH);
@@ -193,6 +216,9 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+
+    /// Generates a PDF document with text elements of different font sizes.
+    /// This is to test font size and correct positioning across sizes.
     #[test]
     fn test_pdf_text_font_size() {
         let fp = Path::new(TEXT_FONT_SIZE_OUTPUT_PATH);
@@ -207,6 +233,8 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+    /// Generates a PDF document with four text elements using different fonts.
+    /// This tests that fonts are loaded correctly for each text. All fonts used are valid.
     #[test]
     fn test_pdf_text_four_fonts() {
         let fp = Path::new(TEXT_FOUR_FONTS_OUTPUT_PATH);
@@ -221,6 +249,8 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+    /// Generates a PDF document with two images of the same size, positioned at exact corners.
+    /// This tests that images are positioned perfectly to the required coordinates.
     #[test]
     fn test_pdf_image_diag() {
         let fp = Path::new(DIAGONAL_IMAGE_OUTPUT_PATH);
@@ -235,6 +265,8 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+    /// Generates a PDF containing an image which is the height of the page.
+    /// This tests that images are scaled vertically correctly.
     #[test]
     fn test_pdf_image_height_max() {
         let fp = Path::new(MAX_HEIGHT_IMAGE_OUTPUT_PATH);
@@ -249,6 +281,8 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+    /// Generates a PDF containing an image which is the width of the page.
+    /// This tests that images are scaled horizontally correctly.
     #[test]
     fn test_pdf_image_width_max() {
         let fp = Path::new(MAX_WIDTH_IMAGE_OUTPUT_PATH);
@@ -263,6 +297,8 @@ mod test_writers {
         assert!(write_res.is_ok());
     }
 
+    /// Generates a PDF containing four images positioned to be perfectly in each corner of the page.
+    /// This tests that images can be positioned correctly at borders, as well as using dynamic variables such as image height.
     #[test]
     fn test_pdf_image_four_corners() {
         let fp = Path::new(FOUR_CORNERS_IMAGE_OUTPUT_PATH);
